@@ -34,6 +34,7 @@ function renderPromoBanner() {
   wrap.id = 'promoBanner';
   wrap.className = 'promo-banner card';
   wrap.innerHTML = `
+    <a class="promo-link" href="https://app.saturn.credit/portfolio" target="_blank" rel="noopener">
     <div class="promo-main">
       <span>${t('promoBanner')}</span>
       <button class="invite-code-btn" id="inviteCodeBtn" onclick="copyInviteCode()" title="${t('copyInvite')}">
@@ -41,6 +42,8 @@ function renderPromoBanner() {
       </button>
     </div>
     <div class="promo-sub">${t('promoHint')}</div>
+    <div class="promo-cta">${t('goPortfolio')} -></div>
+    </a>
     <div class="promo-toast" id="copyToast">${t('copySuccess')}</div>
   `;
 
@@ -50,6 +53,10 @@ function renderPromoBanner() {
 function copyInviteCode() {
   const code = 'SAT-CFF53D3C';
   const toast = document.getElementById('copyToast');
+  if (window.event) {
+    window.event.preventDefault();
+    window.event.stopPropagation();
+  }
 
   const showToast = () => {
     if (!toast) return;
