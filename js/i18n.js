@@ -55,7 +55,8 @@ const I18N = {
     networkTotalPoints_sub: '基于每日增速推算',
     myShare: '空投价值 / 我的占比',
     myAirdropValue: '预估空投价值',
-    roi: 'APY',
+    roi: '积分 APY',
+    pointsApyNote: '不包含 LP、YT 等额外年化利息',
     totalInvestment: '总投入',
     
     // Multiplier table
@@ -131,7 +132,8 @@ const I18N = {
     networkTotalPoints_sub: 'Based on daily growth rate',
     myShare: 'Airdrop Value / My Share',
     myAirdropValue: 'Est. Airdrop Value',
-    roi: 'APY',
+    roi: 'Points APY',
+    pointsApyNote: 'Excludes extra APY sources like LP and YT interest',
     totalInvestment: 'Total Investment',
     
     // Multiplier table

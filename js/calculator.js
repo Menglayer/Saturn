@@ -16,7 +16,11 @@ function calculateResults() {
   const ytBuyValue = parseFloat(document.getElementById('ytBuyValue')?.value) || 0;
 
   // YT multiplier
-  const ytMultiplier = ytType === 'yt_usdat' ? 30 : 10;
+  let ytMultiplier = 10;
+  if (ytType === 'yt_usdat') ytMultiplier = 30;
+  if (ytType === 'yt_susdat') ytMultiplier = 10;
+  if (ytType === 'yt_jrusdat') ytMultiplier = 10;
+  if (ytType === 'yt_srusdat') ytMultiplier = 15;
 
   // Calculate remaining days
   const today = new Date();
