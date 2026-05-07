@@ -212,6 +212,15 @@ function renderResultCards() {
       <div class="result-label">${t('valuePerMillion')}</div>
       <div class="result-value" id="result_valuePerMillion" data-current-value="0">≈ $0.00</div>
     </div>
+    <div class="card card-result card-highlight-gold">
+      <div class="result-label">${t('myAirdropValue')}</div>
+      <div class="result-value result-big" id="result_myAirdropValue" data-current-value="0">≈ $0.00</div>
+      <div class="result-sub" id="result_totalInvestment">${t('totalInvestment')}: $0</div>
+    </div>
+    <div class="card card-result card-kpi">
+      <div class="result-label">${t('roi')}</div>
+      <div class="result-value" id="result_roi" data-current-value="0">0.00%</div>
+    </div>
     <div class="card card-result">
       <div class="result-label">${t('myTotalPoints')}</div>
       <div class="result-value" id="result_myTotalPoints" data-current-value="0">0</div>
@@ -221,15 +230,6 @@ function renderResultCards() {
       <div class="result-label">${t('networkTotalPoints')}</div>
       <div class="result-value" id="result_networkTotalPoints" data-current-value="0">0</div>
       <div class="result-sub">${t('networkTotalPoints_sub')}</div>
-    </div>
-    <div class="card card-result card-highlight-gold">
-      <div class="result-label">${t('myAirdropValue')}</div>
-      <div class="result-value result-big" id="result_myAirdropValue" data-current-value="0">≈ $0.00</div>
-      <div class="result-sub" id="result_totalInvestment">${t('totalInvestment')}: $0</div>
-    </div>
-    <div class="card card-result">
-      <div class="result-label">${t('roi')}</div>
-      <div class="result-value" id="result_roi" data-current-value="0">0.00%</div>
     </div>
     <div class="card card-result card-yt">
       <div class="result-label">${t('yt_totalMiles')}</div>

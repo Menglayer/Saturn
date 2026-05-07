@@ -91,9 +91,11 @@ function calculateResults() {
     ? airdropPool * (myTotalPoints / networkTotalPoints)
     : 0;
 
-  // APY-like yield indicator
-  const roi = totalInvestment > 0
-    ? (myAirdropValue / totalInvestment) * 100
+  // APY based on profit and remaining time to season end
+  const profitRate = totalInvestment > 0 ? (myAirdropValue / totalInvestment) : 0;
+  const annualFactor = remainingDays > 0 ? (365 / remainingDays) : 0;
+  const roi = (totalInvestment > 0 && remainingDays > 0)
+    ? (Math.pow(1 + profitRate, annualFactor) - 1) * 100
     : 0;
 
   // YT-specific airdrop value
@@ -102,8 +104,9 @@ function calculateResults() {
     : 0;
 
   // YT ROI
-  const ytRoi = ytBuyValue > 0
-    ? (ytAirdropValue / ytBuyValue) * 100
+  const ytProfitRate = ytBuyValue > 0 ? (ytAirdropValue / ytBuyValue) : 0;
+  const ytRoi = (ytBuyValue > 0 && remainingDays > 0)
+    ? (Math.pow(1 + ytProfitRate, annualFactor) - 1) * 100
     : 0;
 
   return {
@@ -156,7 +159,7 @@ function updateResults() {
 
   const ytRoiEl = document.getElementById('result_ytRoi');
   if (ytRoiEl) {
-    ytRoiEl.textContent = `ROI: ${formatNumber(r.ytRoi)}%`;
+    ytRoiEl.textContent = `APY: ${formatNumber(r.ytRoi)}%`;
   }
 
   // Update YT display fields in the input section
