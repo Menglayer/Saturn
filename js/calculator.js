@@ -4,7 +4,6 @@
 
 function calculateResults() {
   const currentPoints = parseFloat(document.getElementById('currentPoints')?.value) || 0;
-  const currentDailyPoints = parseFloat(document.getElementById('currentDailyPoints')?.value) || 0;
   const fdv = parseFloat(document.getElementById('fdv')?.value) || 0;
   const airdropPercent = parseFloat(document.getElementById('airdropPercent')?.value) || 0;
   const dailyGrowthRate = parseFloat(document.getElementById('dailyGrowthRate')?.value) || 0;
@@ -42,9 +41,14 @@ function calculateResults() {
   // Total YT points until season end
   const ytTotalPoints = ytDailyPoints * remainingDays;
 
-  // Calculate total daily points from positions
+  // Calculate total daily points from positions + YT only
   const positionDailyTotal = getPositionsDailyTotal();
-  const totalDailyPoints = currentDailyPoints + positionDailyTotal + ytDailyPoints;
+  const totalDailyPoints = positionDailyTotal + ytDailyPoints;
+
+  const currentDailyInput = document.getElementById('currentDailyPoints');
+  if (currentDailyInput) {
+    currentDailyInput.value = totalDailyPoints.toFixed(0);
+  }
 
   // Calculate total investment (positions + YT buy value)
   const totalInvestment = getPositionsTotalInvestment() + ytBuyValue;
@@ -82,17 +86,12 @@ function calculateResults() {
     ? (airdropPool / networkTotalPoints) * 1_000_000
     : 0;
 
-  // My share
-  const myShare = networkTotalPoints > 0
-    ? (myTotalPoints / networkTotalPoints) * 100
-    : 0;
-
   // My airdrop value
   const myAirdropValue = networkTotalPoints > 0
     ? airdropPool * (myTotalPoints / networkTotalPoints)
     : 0;
 
-  // ROI (total)
+  // APY-like yield indicator
   const roi = totalInvestment > 0
     ? (myAirdropValue / totalInvestment) * 100
     : 0;
@@ -116,7 +115,6 @@ function calculateResults() {
     networkTotalPoints,
     airdropPool,
     valuePerMillion,
-    myShare,
     myAirdropValue,
     roi,
     // YT specific
@@ -138,7 +136,6 @@ function updateResults() {
   animateValue('result_valuePerMillion', r.valuePerMillion, 'currency');
   animateValue('result_myTotalPoints', r.myTotalPoints, 'number');
   animateValue('result_networkTotalPoints', r.networkTotalPoints, 'number');
-  animateValue('result_myShare', r.myShare, 'percent');
   animateValue('result_myAirdropValue', r.myAirdropValue, 'currency');
   animateValue('result_roi', r.roi, 'percent');
 

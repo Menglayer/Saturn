@@ -9,9 +9,7 @@ const STRATEGIES = [
   { id: 'curve_usdc_usdat',  label_zh: 'Curve LP - USDC/USDat',             label_en: 'Curve LP - USDC/USDat',             multiplier: 20, category: 'curve' },
   { id: 'curve_usdc_susdat', label_zh: 'Curve LP - USDC/sUSDat',            label_en: 'Curve LP - USDC/sUSDat',            multiplier: 18, category: 'curve' },
   { id: 'pendle_lp_usdat',   label_zh: 'Pendle LP - USDat',                 label_en: 'Pendle LP - USDat',                 multiplier: 15, category: 'pendle' },
-  { id: 'pendle_yt_usdat',   label_zh: 'Pendle Hold YT-USDat',              label_en: 'Pendle Hold YT-USDat',              multiplier: 30, category: 'pendle' },
   { id: 'pendle_lp_susdat',  label_zh: 'Pendle LP - sUSDat',                label_en: 'Pendle LP - sUSDat',                multiplier: 5,  category: 'pendle' },
-  { id: 'pendle_yt_susdat',  label_zh: 'Pendle Hold YT-sUSDat',             label_en: 'Pendle Hold YT-sUSDat',             multiplier: 10, category: 'pendle' },
   { id: 'morpho_supply',     label_zh: 'Morpho Supply sUSDat (Flowdesk)',    label_en: 'Morpho Supply sUSDat (Flowdesk)',    multiplier: 2,  category: 'morpho' },
   { id: 'morpho_lend',       label_zh: 'Morpho Lend AUSD (Flowdesk RWA)',   label_en: 'Morpho Lend AUSD (Flowdesk RWA)',   multiplier: 1,  category: 'morpho' },
 ];

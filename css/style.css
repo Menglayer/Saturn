@@ -626,16 +626,21 @@ body.modal-open {
 /* ----- Result Cards Grid ----- */
 .result-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 32px;
+  align-items: stretch;
 }
 
 .card-result {
-  text-align: center;
+  text-align: left;
   padding: 20px 16px;
   position: relative;
   overflow: hidden;
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .card-result::before {
@@ -667,7 +672,7 @@ body.modal-open {
   font-weight: 700;
   font-size: 1.35rem;
   color: var(--text-primary);
-  word-break: break-all;
+  word-break: break-word;
 }
 
 .result-big {
@@ -862,7 +867,7 @@ body.modal-open {
     grid-column: 1 / -1;
   }
   .result-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .card-highlight-gold {
     grid-column: span 1;
@@ -908,7 +913,7 @@ body.modal-open {
   }
 
   .result-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .card-highlight-gold {

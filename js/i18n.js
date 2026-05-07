@@ -55,7 +55,7 @@ const I18N = {
     networkTotalPoints_sub: '基于每日增速推算',
     myShare: '空投价值 / 我的占比',
     myAirdropValue: '预估空投价值',
-    roi: 'ROI',
+    roi: 'APY',
     totalInvestment: '总投入',
     
     // Multiplier table
@@ -131,7 +131,7 @@ const I18N = {
     networkTotalPoints_sub: 'Based on daily growth rate',
     myShare: 'Airdrop Value / My Share',
     myAirdropValue: 'Est. Airdrop Value',
-    roi: 'ROI',
+    roi: 'APY',
     totalInvestment: 'Total Investment',
     
     // Multiplier table

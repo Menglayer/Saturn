@@ -77,7 +77,8 @@ function renderInputCards() {
       </div>
       <div class="field">
         <label for="currentDailyPoints">${t('currentDailyPoints')}</label>
-        <input type="number" id="currentDailyPoints" value="${DEFAULTS.currentDailyPoints}" min="0" oninput="updateResults()">
+        <input type="number" id="currentDailyPoints" value="0" min="0" disabled>
+        <div class="field-hint">${t('dailyPointsAuto')}</div>
       </div>
       <div class="section-divider">
         <span>${t('positions_title')}</span>
@@ -220,10 +221,6 @@ function renderResultCards() {
       <div class="result-label">${t('networkTotalPoints')}</div>
       <div class="result-value" id="result_networkTotalPoints" data-current-value="0">0</div>
       <div class="result-sub">${t('networkTotalPoints_sub')}</div>
-    </div>
-    <div class="card card-result">
-      <div class="result-label">${t('myShare')}</div>
-      <div class="result-value" id="result_myShare" data-current-value="0">0.00%</div>
     </div>
     <div class="card card-result card-highlight-gold">
       <div class="result-label">${t('myAirdropValue')}</div>
