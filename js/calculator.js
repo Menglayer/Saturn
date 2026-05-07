@@ -53,8 +53,9 @@ function calculateResults() {
   const myTotalPoints = currentPoints + totalDailyPoints * remainingDays;
 
   // Network total points at season end:
-  // live baseline (Merkl total) + future incremental points
+  // when live total exists, compound it by daily growth until season end
   const liveNetworkPoints = (typeof LIVE !== 'undefined' && typeof LIVE.points === 'number') ? LIVE.points : null;
+  const growthRate = Math.max(0, dailyGrowthRate) / 100;
 
   let networkIncrementalPoints = 0;
   if (networkCurrentDaily > 0 && dailyGrowthRate > 0) {
@@ -66,7 +67,7 @@ function calculateResults() {
 
   let networkTotalPoints = 0;
   if (liveNetworkPoints !== null) {
-    networkTotalPoints = liveNetworkPoints + networkIncrementalPoints;
+    networkTotalPoints = liveNetworkPoints * Math.pow(1 + growthRate, remainingDays);
   } else if (networkIncrementalPoints > 0) {
     networkTotalPoints = networkIncrementalPoints;
   } else {
