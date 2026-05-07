@@ -41,7 +41,8 @@ function calculateResults() {
   // YT daily points = YT quantity × (daily points per token / 24) × 24 simplified:
   // Points formula: YT points = YT quantity × holding hours × (daily_points_per_token / 24) × multiplier
   // Simplified for full-day holding: YT daily points = YT quantity × multiplier
-  const ytDailyPoints = ytQuantity * ytMultiplier;
+  const ytDailyPointsRaw = ytQuantity * ytMultiplier;
+  const ytDailyPoints = ytDailyPointsRaw * 0.95;
   // Total YT points until season end
   const ytTotalPoints = ytDailyPoints * remainingDays;
 
