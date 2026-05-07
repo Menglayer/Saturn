@@ -52,13 +52,23 @@ function calculateResults() {
   // My total points at season end
   const myTotalPoints = currentPoints + totalDailyPoints * remainingDays;
 
-  // Network total points estimation
-  let networkTotalPoints = 0;
+  // Network total points at season end:
+  // live baseline (Merkl total) + future incremental points
+  const liveNetworkPoints = (typeof LIVE !== 'undefined' && typeof LIVE.points === 'number') ? LIVE.points : null;
+
+  let networkIncrementalPoints = 0;
   if (networkCurrentDaily > 0 && dailyGrowthRate > 0) {
     const r = 1 + dailyGrowthRate / 100;
-    networkTotalPoints = networkCurrentDaily * (Math.pow(r, remainingDays) - 1) / (r - 1);
+    networkIncrementalPoints = networkCurrentDaily * (Math.pow(r, remainingDays) - 1) / (r - 1);
   } else if (networkCurrentDaily > 0) {
-    networkTotalPoints = networkCurrentDaily * remainingDays;
+    networkIncrementalPoints = networkCurrentDaily * remainingDays;
+  }
+
+  let networkTotalPoints = 0;
+  if (liveNetworkPoints !== null) {
+    networkTotalPoints = liveNetworkPoints + networkIncrementalPoints;
+  } else if (networkIncrementalPoints > 0) {
+    networkTotalPoints = networkIncrementalPoints;
   } else {
     networkTotalPoints = myTotalPoints * 100;
   }
