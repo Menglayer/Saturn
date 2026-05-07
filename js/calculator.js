@@ -29,6 +29,18 @@ function calculateResults() {
   endDate.setHours(0, 0, 0, 0);
   const remainingDays = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)));
 
+  // YT effective end date = min(YT expiry, season end)
+  const ytExpiryRaw = (typeof LIVE !== 'undefined' && LIVE.ytExpiryByType)
+    ? LIVE.ytExpiryByType[ytType]
+    : null;
+  let ytRemainingDays = remainingDays;
+  if (ytExpiryRaw) {
+    const ytExpiryDate = new Date(ytExpiryRaw);
+    ytExpiryDate.setHours(0, 0, 0, 0);
+    const ytDays = Math.max(0, Math.ceil((ytExpiryDate - today) / (1000 * 60 * 60 * 24)));
+    ytRemainingDays = Math.min(remainingDays, ytDays);
+  }
+
   // Update days remaining display
   const daysEl = document.getElementById('daysRemaining');
   if (daysEl) {
@@ -43,7 +55,7 @@ function calculateResults() {
   // Simplified for full-day holding: YT daily points = YT quantity × multiplier
   const ytDailyPoints = ytQuantity * ytMultiplier;
   // Total YT points until season end
-  const ytTotalPoints = ytDailyPoints * remainingDays;
+  const ytTotalPoints = ytDailyPoints * ytRemainingDays;
 
   // Calculate total daily points from positions + YT only
   const positionDailyTotal = getPositionsDailyTotal();
@@ -58,7 +70,9 @@ function calculateResults() {
   const totalInvestment = getPositionsTotalInvestment() + ytBuyValue;
 
   // My total points at season end
-  const myTotalPoints = currentPoints + totalDailyPoints * remainingDays;
+  const nonYtPointsToEnd = positionDailyTotal * remainingDays;
+  const ytPointsToEnd = ytDailyPoints * ytRemainingDays;
+  const myTotalPoints = currentPoints + nonYtPointsToEnd + ytPointsToEnd;
 
   // Network total points at season end:
   // when live total exists, compound it by daily growth until season end
