@@ -122,13 +122,26 @@ body.modal-open {
   color: #15202b;
 }
 
-.promo-main span {
+.promo-title {
   background: linear-gradient(135deg, #b53a00 0%, #ff5100 50%, #b53a00 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: shimmer 2.8s linear infinite;
+}
+
+.promo-invite-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.promo-invite-label {
+  color: #8b3a12;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .invite-code-btn {
@@ -1018,6 +1031,11 @@ body.modal-open {
     flex-direction: column;
     align-items: flex-start;
     font-size: 0.95rem;
+  }
+
+  .promo-invite-wrap {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .input-grid {

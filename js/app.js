@@ -36,10 +36,13 @@ function renderPromoBanner() {
   wrap.innerHTML = `
     <a class="promo-link" href="https://app.saturn.credit/portfolio" target="_blank" rel="noopener">
     <div class="promo-main">
-      <span>${t('promoBanner')}</span>
-      <button class="invite-code-btn" id="inviteCodeBtn" onclick="copyInviteCode()" title="${t('copyInvite')}">
-        SAT-CFF53D3C
-      </button>
+      <span class="promo-title">速度加入 Saturn 吧</span>
+      <div class="promo-invite-wrap">
+        <span class="promo-invite-label">加成邀请码</span>
+        <button class="invite-code-btn" id="inviteCodeBtn" onclick="copyInviteCode()" title="${t('copyInvite')}">
+          SAT-CFF53D3C
+        </button>
+      </div>
     </div>
     <div class="promo-sub">${t('promoHint')}</div>
     <div class="promo-cta">${t('goPortfolio')} -></div>
