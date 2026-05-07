@@ -97,7 +97,7 @@ function renderInputCards() {
       </div>
       <div class="field">
         <label for="ytType">${t('yt_type')}</label>
-        <select id="ytType" onchange="updateResults()">
+        <select id="ytType" onchange="onYtTypeChange()">
           <option value="yt_usdat">YT-USDat (30x)</option>
           <option value="yt_susdat">YT-sUSDat (10x)</option>
         </select>
@@ -337,8 +337,43 @@ function extractYtPriceFromMarket(payload) {
   return data?.yt?.price?.usd ?? null;
 }
 
+function parseMerklAmountToNumber(amountStr, decimals = 18) {
+  if (!amountStr || !/^\d+$/.test(amountStr)) return null;
+  const normalized = amountStr.replace(/^0+/, '') || '0';
+  if (normalized === '0') return 0;
+
+  let valueText;
+  if (normalized.length <= decimals) {
+    const padded = normalized.padStart(decimals, '0');
+    valueText = `0.${padded.slice(0, 6)}`;
+  } else {
+    const intPart = normalized.slice(0, normalized.length - decimals);
+    const fracPart = normalized.slice(normalized.length - decimals, normalized.length - decimals + 6);
+    valueText = fracPart ? `${intPart}.${fracPart}` : intPart;
+  }
+
+  const num = Number(valueText);
+  return Number.isFinite(num) ? num : null;
+}
+
 function getSelectedYtType() {
   return document.getElementById('ytType')?.value || 'yt_usdat';
+}
+
+function syncYtPriceInputByType() {
+  const ytPriceInput = document.getElementById('ytPrice');
+  if (!ytPriceInput) return;
+  const selectedType = getSelectedYtType();
+  const selectedPrice = LIVE.ytPriceByType[selectedType];
+  if (selectedPrice !== null) {
+    ytPriceInput.value = selectedPrice.toFixed(4);
+  }
+}
+
+function onYtTypeChange() {
+  syncYtPriceInputByType();
+  renderLiveMetrics();
+  updateResults();
 }
 
 function renderLiveMetrics() {
@@ -363,8 +398,8 @@ function renderLiveMetrics() {
 }
 
 async function fetchLiveMetrics() {
-  const saturnDirect = 'https://app.saturn.credit/';
-  const saturnProxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(saturnDirect)}`;
+  const merklDirect = 'https://api.merkl.xyz/v4/rewards/token/total?chainId=1&address=0xD223bbdd0421E394C0df9dFfe568f1dADfFd6f85';
+  const merklProxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(merklDirect)}`;
 
   async function fetchTextWithFallback(urls) {
     for (const url of urls) {
@@ -388,28 +423,19 @@ async function fetchLiveMetrics() {
     return extractYtPriceFromMarket(raw);
   }
 
-  const [saturnHtml, ytUsdatPrice, ytSusdatPrice] = await Promise.all([
-    fetchTextWithFallback([saturnDirect, saturnProxy]),
+  const [merklRaw, ytUsdatPrice, ytSusdatPrice] = await Promise.all([
+    fetchTextWithFallback([merklDirect, merklProxy]),
     fetchPendleMarketYtPrice('0x9afe7a057a09cf5da748d952078c9c99938b4329'),
     fetchPendleMarketYtPrice('0x91bc86899c8391b6caaf26535b9cd82efe49a189'),
   ]);
 
-  if (saturnHtml) {
-    const pointsMatch = saturnHtml.match(/\/ POINTS<[^>]*>([0-9]+(?:\.[0-9]+)?)/i);
-    LIVE.points = pointsMatch ? parseFloat(pointsMatch[1]) : null;
-  } else {
-    LIVE.points = null;
-  }
+  const merklData = parseJsonSafe(merklRaw);
+  LIVE.points = parseMerklAmountToNumber(merklData?.amount, 18);
 
   LIVE.ytPriceByType.yt_usdat = ytUsdatPrice;
   LIVE.ytPriceByType.yt_susdat = ytSusdatPrice;
 
-  const ytPriceInput = document.getElementById('ytPrice');
-  const selectedType = getSelectedYtType();
-  const selectedPrice = LIVE.ytPriceByType[selectedType];
-  if (ytPriceInput && selectedPrice !== null) {
-    ytPriceInput.value = selectedPrice.toFixed(4);
-  }
+  syncYtPriceInputByType();
 
   renderLiveMetrics();
   updateResults();
