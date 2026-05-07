@@ -74,6 +74,10 @@ const I18N = {
     // Misc
     langSwitch: 'EN',
     showMultipliers: '查看倍率表',
+    promoBanner: '速度加入 Saturn 吧 加成邀请码',
+    promoHint: '邀请码使用位置：portfolio → Total Point下面 → Apply Ref',
+    copyInvite: '点击复制',
+    copySuccess: '复制成功',
     livePoints: '当前积分总量',
     liveYtPrice: 'YT 实时价格',
     liveUpdating: '同步中',
@@ -153,6 +157,10 @@ const I18N = {
     // Misc
     langSwitch: '中',
     showMultipliers: 'Multiplier Table',
+    promoBanner: 'Join Saturn now with bonus invite code',
+    promoHint: 'Use it at: portfolio -> under Total Point -> Apply Ref',
+    copyInvite: 'Click to copy',
+    copySuccess: 'Copied',
     livePoints: 'Current Total Points',
     liveYtPrice: 'Live YT Price',
     liveUpdating: 'Syncing',

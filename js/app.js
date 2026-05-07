@@ -14,12 +14,69 @@ const LIVE = {
 
 function renderAll() {
   renderHeader();
+  renderPromoBanner();
   renderInputCards();
   renderPositions();
   renderResultCards();
   renderMultiplierTable();
   renderFooter();
   updateResults();
+}
+
+function renderPromoBanner() {
+  const header = document.getElementById('appHeader');
+  if (!header) return;
+
+  const existing = document.getElementById('promoBanner');
+  if (existing) existing.remove();
+
+  const wrap = document.createElement('div');
+  wrap.id = 'promoBanner';
+  wrap.className = 'promo-banner card';
+  wrap.innerHTML = `
+    <div class="promo-main">
+      <span>${t('promoBanner')}</span>
+      <button class="invite-code-btn" id="inviteCodeBtn" onclick="copyInviteCode()" title="${t('copyInvite')}">
+        SAT-CFF53D3C
+      </button>
+    </div>
+    <div class="promo-sub">${t('promoHint')}</div>
+    <div class="promo-toast" id="copyToast">${t('copySuccess')}</div>
+  `;
+
+  header.insertAdjacentElement('afterend', wrap);
+}
+
+function copyInviteCode() {
+  const code = 'SAT-CFF53D3C';
+  const toast = document.getElementById('copyToast');
+
+  const showToast = () => {
+    if (!toast) return;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1400);
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(showToast).catch(() => {
+      const input = document.createElement('input');
+      input.value = code;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      showToast();
+    });
+    return;
+  }
+
+  const input = document.createElement('input');
+  input.value = code;
+  document.body.appendChild(input);
+  input.select();
+  document.execCommand('copy');
+  document.body.removeChild(input);
+  showToast();
 }
 
 function renderHeader() {
