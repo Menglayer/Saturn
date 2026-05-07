@@ -75,6 +75,8 @@ const I18N = {
     liveYtPrice: 'YT 实时价格',
     liveUpdating: '同步中',
     liveUnavailable: '暂不可用',
+    fixedProtocolAssumption: '由协议假设固定',
+    fixedSeasonBoundary: 'Season 结束边界固定',
   },
   
   en: {
@@ -149,6 +151,8 @@ const I18N = {
     liveYtPrice: 'Live YT Price',
     liveUpdating: 'Syncing',
     liveUnavailable: 'Unavailable',
+    fixedProtocolAssumption: 'Fixed by protocol assumptions',
+    fixedSeasonBoundary: 'Fixed season boundary',
   }
 };
 

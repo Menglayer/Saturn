@@ -151,7 +151,8 @@ function renderInputCards() {
       </div>
       <div class="field">
         <label for="airdropPercent">${t('airdropPercent')}</label>
-        <input type="number" id="airdropPercent" value="${DEFAULTS.airdropPercent}" min="0" max="100" step="0.5" oninput="updateResults()">
+        <input type="number" id="airdropPercent" value="${DEFAULTS.airdropPercent}" min="0" max="100" step="0.5" disabled>
+        <div class="field-hint">${t('fixedProtocolAssumption')}</div>
       </div>
       <div class="field">
         <label for="dailyGrowthRate">${t('dailyGrowthRate')}</label>
@@ -175,7 +176,8 @@ function renderInputCards() {
       </h2>
       <div class="field">
         <label for="seasonEndDate">${t('seasonEndDate')}</label>
-        <input type="date" id="seasonEndDate" value="${DEFAULTS.seasonEndDate}" onchange="updateResults()">
+        <input type="date" id="seasonEndDate" value="${DEFAULTS.seasonEndDate}" disabled>
+        <div class="field-hint">${t('fixedSeasonBoundary')}</div>
       </div>
       <div class="days-remaining-display">
         <span class="days-label">${t('daysRemaining')}</span>
