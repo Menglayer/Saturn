@@ -104,9 +104,9 @@ function calculateResults() {
     ? airdropPool * (ytTotalPoints / networkTotalPoints)
     : 0;
 
-  // YT APY (per requirement)
-  const ytRoi = (ytBuyValue > 0 && remainingDays > 0)
-    ? ((((ytAirdropValue - ytBuyValue) / remainingDays) * 365) / ytBuyValue) * 100
+  // YT ROI = final airdrop value / buy value
+  const ytRoi = ytBuyValue > 0
+    ? (ytAirdropValue / ytBuyValue) * 100
     : 0;
 
   // Non-YT annualized yield (position-only APY)
