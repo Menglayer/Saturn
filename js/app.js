@@ -358,10 +358,46 @@ function renderLiveMetrics() {
 }
 
 async function fetchLiveMetrics() {
-  const saturnPromise = fetch('https://app.saturn.credit/').then(r => r.text()).catch(() => '');
-  const pendlePromise = fetch('https://api-v2.pendle.finance/core/v1/42161/markets?limit=100').then(r => r.text()).catch(() => '');
+  const saturnDirect = 'https://app.saturn.credit/';
+  const saturnProxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(saturnDirect)}`;
 
-  const [saturnHtml, pendleRaw] = await Promise.all([saturnPromise, pendlePromise]);
+  async function fetchTextWithFallback(urls) {
+    for (const url of urls) {
+      try {
+        const resp = await fetch(url, { cache: 'no-store' });
+        if (resp.ok) {
+          const text = await resp.text();
+          if (text) return text;
+        }
+      } catch (_) {
+      }
+    }
+    return '';
+  }
+
+  async function fetchPendlePriceByKeyword(keyword) {
+    const chainIds = [42161, 1, 8453, 10, 146, 5000, 80094, 56, 999, 9745];
+    const marketUrls = chainIds.map(chainId => `https://api-v2.pendle.finance/core/v1/${chainId}/markets?limit=200`);
+
+    for (const url of marketUrls) {
+      try {
+        const resp = await fetch(url, { cache: 'no-store' });
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        const price = findPendleMarketPrice(data, keyword);
+        if (price !== null) return price;
+      } catch (_) {
+      }
+    }
+
+    return null;
+  }
+
+  const [saturnHtml, ytUsdatPrice, ytSusdatPrice] = await Promise.all([
+    fetchTextWithFallback([saturnDirect, saturnProxy]),
+    fetchPendlePriceByKeyword('yt-usdat'),
+    fetchPendlePriceByKeyword('yt-susdat'),
+  ]);
 
   if (saturnHtml) {
     const pointsMatch = saturnHtml.match(/\/ POINTS<[^>]*>([0-9]+(?:\.[0-9]+)?)/i);
@@ -370,9 +406,8 @@ async function fetchLiveMetrics() {
     LIVE.points = null;
   }
 
-  const pendleData = parseJsonSafe(pendleRaw);
-  LIVE.ytPriceByType.yt_usdat = findPendleMarketPrice(pendleData, 'yt-usdat');
-  LIVE.ytPriceByType.yt_susdat = findPendleMarketPrice(pendleData, 'yt-susdat');
+  LIVE.ytPriceByType.yt_usdat = ytUsdatPrice;
+  LIVE.ytPriceByType.yt_susdat = ytSusdatPrice;
 
   const ytPriceInput = document.getElementById('ytPrice');
   const selectedType = getSelectedYtType();
