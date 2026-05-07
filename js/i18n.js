@@ -56,8 +56,9 @@ const I18N = {
     myShare: '空投价值 / 我的占比',
     myAirdropValue: '预估空投价值',
     roi: '积分 APY',
-    pointsApyNote: '不包含 LP、YT 等额外年化利息',
+    pointsApyNote: '仅按仓位计算，不包含 YT',
     pointsApyBreakdown: 'YT APY / 非YT APY',
+    ytRoiCard: 'YT ROI',
     totalInvestment: '总投入',
     
     // Multiplier table
@@ -134,8 +135,9 @@ const I18N = {
     myShare: 'Airdrop Value / My Share',
     myAirdropValue: 'Est. Airdrop Value',
     roi: 'Points APY',
-    pointsApyNote: 'Excludes extra APY sources like LP and YT interest',
+    pointsApyNote: 'Position-only, excludes YT',
     pointsApyBreakdown: 'YT APY / Non-YT APY',
+    ytRoiCard: 'YT ROI',
     totalInvestment: 'Total Investment',
     
     // Multiplier table

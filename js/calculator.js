@@ -95,10 +95,7 @@ function calculateResults() {
     ? airdropPool * (myTotalPoints / networkTotalPoints)
     : 0;
 
-  // Points APY:
-  // - YT part treats principal as decaying to zero at expiry/season end
-  // - Non-YT part treats points airdrop as extra yield on held capital
-  // Combined APY = (annualized YT profit + annualized non-YT profit) / total investment
+  // APY factor by season remaining days
   const annualFactor = remainingDays > 0 ? (365 / remainingDays) : 0;
 
   // YT-specific airdrop value
@@ -111,7 +108,7 @@ function calculateResults() {
     ? ((((ytAirdropValue - ytBuyValue) / remainingDays) * 365) / ytBuyValue) * 100
     : 0;
 
-  // Non-YT annualized yield
+  // Non-YT annualized yield (position-only APY)
   const nonYtInvestment = getPositionsTotalInvestment();
   const nonYtAirdropValue = myAirdropValue - ytAirdropValue;
   const nonYtAnnualProfit = (nonYtInvestment > 0 && remainingDays > 0)
@@ -121,14 +118,7 @@ function calculateResults() {
     ? (nonYtAnnualProfit / nonYtInvestment) * 100
     : 0;
 
-  // YT annualized profit from formula above
-  const ytAnnualProfit = (ytBuyValue > 0 && remainingDays > 0)
-    ? ((ytAirdropValue - ytBuyValue) / remainingDays) * 365
-    : 0;
-
-  const roi = totalInvestment > 0
-    ? ((nonYtAnnualProfit + ytAnnualProfit) / totalInvestment) * 100
-    : 0;
+  const roi = nonYtApy;
 
   return {
     remainingDays,
@@ -181,12 +171,12 @@ function updateResults() {
 
   const ytRoiEl = document.getElementById('result_ytRoi');
   if (ytRoiEl) {
-    ytRoiEl.textContent = `APY: ${formatNumber(r.ytRoi)}%`;
+    ytRoiEl.textContent = `YT ROI: ${formatNumber(r.ytRoi)}%`;
   }
 
-  const apyBreakdownEl = document.getElementById('result_pointsApyBreakdown');
-  if (apyBreakdownEl) {
-    apyBreakdownEl.textContent = `${t('pointsApyBreakdown')}: ${formatNumber(r.ytRoi)}% / ${formatNumber(r.nonYtApy)}%`;
+  const ytOnlyRoiEl = document.getElementById('result_ytOnlyRoi');
+  if (ytOnlyRoiEl) {
+    ytOnlyRoiEl.textContent = `${formatNumber(r.ytRoi)}%`;
   }
 
   // Update YT display fields in the input section

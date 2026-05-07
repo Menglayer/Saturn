@@ -225,7 +225,11 @@ function renderResultCards() {
       <div class="result-label">${t('roi')}</div>
       <div class="result-value" id="result_roi" data-current-value="0">0.00%</div>
       <div class="result-sub">${t('pointsApyNote')}</div>
-      <div class="result-sub" id="result_pointsApyBreakdown">${t('pointsApyBreakdown')}: 0.00% / 0.00%</div>
+    </div>
+    <div class="card card-result card-ytroi">
+      <div class="result-label">${t('ytRoiCard')}</div>
+      <div class="result-value" id="result_ytOnlyRoi" data-current-value="0">0.00%</div>
+      <div class="result-sub">YT only</div>
     </div>
     <div class="card card-result">
       <div class="result-label">${t('myTotalPoints')}</div>
@@ -245,7 +249,7 @@ function renderResultCards() {
     <div class="card card-result card-yt">
       <div class="result-label">${t('yt_airdropValue')}</div>
       <div class="result-value" id="result_ytAirdropValue" data-current-value="0">≈ $0.00</div>
-      <div class="result-sub" id="result_ytRoi">ROI: 0.00%</div>
+      <div class="result-sub" id="result_ytRoi">YT APY: 0.00%</div>
     </div>
   `;
 }
