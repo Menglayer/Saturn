@@ -5,6 +5,15 @@
 let positions = [];
 let positionIdCounter = 0;
 
+function getEffectiveAmountForPoints(pos) {
+  if (!pos) return 0;
+  // Pendle LP: only SY side earns points, assume 55% effective amount.
+  if (pos.strategyId === 'pendle_lp_usdat' || pos.strategyId === 'pendle_lp_susdat') {
+    return pos.amount * 0.55;
+  }
+  return pos.amount;
+}
+
 function addPosition(strategyId = 'hold_usdat', amount = 1000) {
   const id = ++positionIdCounter;
   positions.push({ id, strategyId, amount });
@@ -35,7 +44,7 @@ function updatePositionAmount(id, amount) {
     const strategy = STRATEGIES.find(s => s.id === pos.strategyId);
     const dailyEl = document.getElementById(`pos_daily_${id}`);
     if (dailyEl && strategy) {
-      const daily = pos.amount * strategy.multiplier;
+      const daily = getEffectiveAmountForPoints(pos) * strategy.multiplier;
       dailyEl.textContent = formatNumber(daily, 0);
     }
     // Update total
@@ -47,7 +56,7 @@ function updatePositionAmount(id, amount) {
 function getPositionsDailyTotal() {
   return positions.reduce((sum, pos) => {
     const strategy = STRATEGIES.find(s => s.id === pos.strategyId);
-    return sum + (strategy ? pos.amount * strategy.multiplier : 0);
+    return sum + (strategy ? getEffectiveAmountForPoints(pos) * strategy.multiplier : 0);
   }, 0);
 }
 
@@ -70,7 +79,7 @@ function renderPositions() {
 
   container.innerHTML = positions.map((pos, index) => {
     const strategy = STRATEGIES.find(s => s.id === pos.strategyId);
-    const daily = strategy ? pos.amount * strategy.multiplier : 0;
+    const daily = strategy ? getEffectiveAmountForPoints(pos) * strategy.multiplier : 0;
     const categoryColor = strategy ? CATEGORY_COLORS[strategy.category] : '#666';
 
     return `
