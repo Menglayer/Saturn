@@ -29,18 +29,6 @@ function calculateResults() {
   endDate.setHours(0, 0, 0, 0);
   const remainingDays = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)));
 
-  // YT effective end date = min(YT expiry, season end)
-  const ytExpiryRaw = (typeof LIVE !== 'undefined' && LIVE.ytExpiryByType)
-    ? LIVE.ytExpiryByType[ytType]
-    : null;
-  let ytRemainingDays = remainingDays;
-  if (ytExpiryRaw) {
-    const ytExpiryDate = new Date(ytExpiryRaw);
-    ytExpiryDate.setHours(0, 0, 0, 0);
-    const ytDays = Math.max(0, Math.ceil((ytExpiryDate - today) / (1000 * 60 * 60 * 24)));
-    ytRemainingDays = Math.min(remainingDays, ytDays);
-  }
-
   // Update days remaining display
   const daysEl = document.getElementById('daysRemaining');
   if (daysEl) {
@@ -55,7 +43,7 @@ function calculateResults() {
   // Simplified for full-day holding: YT daily points = YT quantity × multiplier
   const ytDailyPoints = ytQuantity * ytMultiplier;
   // Total YT points until season end
-  const ytTotalPoints = ytDailyPoints * ytRemainingDays;
+  const ytTotalPoints = ytDailyPoints * remainingDays;
 
   // Calculate total daily points from positions + YT only
   const positionDailyTotal = getPositionsDailyTotal();
@@ -70,9 +58,7 @@ function calculateResults() {
   const totalInvestment = getPositionsTotalInvestment() + ytBuyValue;
 
   // My total points at season end
-  const nonYtPointsToEnd = positionDailyTotal * remainingDays;
-  const ytPointsToEnd = ytDailyPoints * ytRemainingDays;
-  const myTotalPoints = currentPoints + nonYtPointsToEnd + ytPointsToEnd;
+  const myTotalPoints = currentPoints + totalDailyPoints * remainingDays;
 
   // Network total points at season end:
   // when live total exists, compound it by daily growth until season end
@@ -109,22 +95,39 @@ function calculateResults() {
     ? airdropPool * (myTotalPoints / networkTotalPoints)
     : 0;
 
-  // APY based on profit and remaining time to season end
-  const profitRate = totalInvestment > 0 ? (myAirdropValue / totalInvestment) : 0;
+  // Points APY:
+  // - YT part treats principal as decaying to zero at expiry/season end
+  // - Non-YT part treats points airdrop as extra yield on held capital
+  // Combined APY = (annualized YT profit + annualized non-YT profit) / total investment
   const annualFactor = remainingDays > 0 ? (365 / remainingDays) : 0;
-  const roi = (totalInvestment > 0 && remainingDays > 0)
-    ? (Math.pow(1 + profitRate, annualFactor) - 1) * 100
-    : 0;
 
   // YT-specific airdrop value
   const ytAirdropValue = networkTotalPoints > 0
     ? airdropPool * (ytTotalPoints / networkTotalPoints)
     : 0;
 
-  // YT ROI
-  const ytProfitRate = ytBuyValue > 0 ? (ytAirdropValue / ytBuyValue) : 0;
+  // YT APY (per requirement)
   const ytRoi = (ytBuyValue > 0 && remainingDays > 0)
-    ? (Math.pow(1 + ytProfitRate, annualFactor) - 1) * 100
+    ? ((((ytAirdropValue - ytBuyValue) / remainingDays) * 365) / ytBuyValue) * 100
+    : 0;
+
+  // Non-YT annualized yield
+  const nonYtInvestment = getPositionsTotalInvestment();
+  const nonYtAirdropValue = myAirdropValue - ytAirdropValue;
+  const nonYtAnnualProfit = (nonYtInvestment > 0 && remainingDays > 0)
+    ? (nonYtAirdropValue / remainingDays) * 365
+    : 0;
+  const nonYtApy = nonYtInvestment > 0
+    ? (nonYtAnnualProfit / nonYtInvestment) * 100
+    : 0;
+
+  // YT annualized profit from formula above
+  const ytAnnualProfit = (ytBuyValue > 0 && remainingDays > 0)
+    ? ((ytAirdropValue - ytBuyValue) / remainingDays) * 365
+    : 0;
+
+  const roi = totalInvestment > 0
+    ? ((nonYtAnnualProfit + ytAnnualProfit) / totalInvestment) * 100
     : 0;
 
   return {
@@ -144,6 +147,7 @@ function calculateResults() {
     ytTotalPoints,
     ytAirdropValue,
     ytRoi,
+    nonYtApy,
   };
 }
 
@@ -178,6 +182,11 @@ function updateResults() {
   const ytRoiEl = document.getElementById('result_ytRoi');
   if (ytRoiEl) {
     ytRoiEl.textContent = `APY: ${formatNumber(r.ytRoi)}%`;
+  }
+
+  const apyBreakdownEl = document.getElementById('result_pointsApyBreakdown');
+  if (apyBreakdownEl) {
+    apyBreakdownEl.textContent = `${t('pointsApyBreakdown')}: ${formatNumber(r.ytRoi)}% / ${formatNumber(r.nonYtApy)}%`;
   }
 
   // Update YT display fields in the input section

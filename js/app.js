@@ -10,12 +10,6 @@ const LIVE = {
     yt_jrusdat: null,
     yt_srusdat: null,
   },
-  ytExpiryByType: {
-    yt_usdat: null,
-    yt_susdat: null,
-    yt_jrusdat: null,
-    yt_srusdat: null,
-  },
 };
 
 function renderAll() {
@@ -231,6 +225,7 @@ function renderResultCards() {
       <div class="result-label">${t('roi')}</div>
       <div class="result-value" id="result_roi" data-current-value="0">0.00%</div>
       <div class="result-sub">${t('pointsApyNote')}</div>
+      <div class="result-sub" id="result_pointsApyBreakdown">${t('pointsApyBreakdown')}: 0.00% / 0.00%</div>
     </div>
     <div class="card card-result">
       <div class="result-label">${t('myTotalPoints')}</div>
@@ -345,11 +340,6 @@ function extractYtPriceFromMarket(payload) {
   return data?.yt?.price?.usd ?? null;
 }
 
-function extractYtExpiryFromMarket(payload) {
-  const data = typeof payload === 'string' ? parseJsonSafe(payload) : payload;
-  return data?.yt?.expiry || data?.expiry || null;
-}
-
 function parseMerklAmountToNumber(amountStr, decimals = 18) {
   if (!amountStr || !/^\d+$/.test(amountStr)) return null;
   const normalized = amountStr.replace(/^0+/, '') || '0';
@@ -432,14 +422,11 @@ async function fetchLiveMetrics() {
     const direct = `https://api-v2.pendle.finance/core/v1/1/markets/${marketAddress}`;
     const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(direct)}`;
     const raw = await fetchTextWithFallback([direct, proxy]);
-    if (!raw) return { price: null, expiry: null };
-    return {
-      price: extractYtPriceFromMarket(raw),
-      expiry: extractYtExpiryFromMarket(raw),
-    };
+    if (!raw) return null;
+    return extractYtPriceFromMarket(raw);
   }
 
-  const [merklRaw, ytUsdat, ytSusdat, ytJrusdat, ytSrusdat] = await Promise.all([
+  const [merklRaw, ytUsdatPrice, ytSusdatPrice, ytJrusdatPrice, ytSrusdatPrice] = await Promise.all([
     fetchTextWithFallback([merklDirect, merklProxy]),
     fetchPendleMarketYtPrice('0x9afe7a057a09cf5da748d952078c9c99938b4329'),
     fetchPendleMarketYtPrice('0x91bc86899c8391b6caaf26535b9cd82efe49a189'),
@@ -450,15 +437,10 @@ async function fetchLiveMetrics() {
   const merklData = parseJsonSafe(merklRaw);
   LIVE.points = parseMerklAmountToNumber(merklData?.amount, 18);
 
-  LIVE.ytPriceByType.yt_usdat = ytUsdat.price;
-  LIVE.ytPriceByType.yt_susdat = ytSusdat.price;
-  LIVE.ytPriceByType.yt_jrusdat = ytJrusdat.price;
-  LIVE.ytPriceByType.yt_srusdat = ytSrusdat.price;
-
-  LIVE.ytExpiryByType.yt_usdat = ytUsdat.expiry;
-  LIVE.ytExpiryByType.yt_susdat = ytSusdat.expiry;
-  LIVE.ytExpiryByType.yt_jrusdat = ytJrusdat.expiry;
-  LIVE.ytExpiryByType.yt_srusdat = ytSrusdat.expiry;
+  LIVE.ytPriceByType.yt_usdat = ytUsdatPrice;
+  LIVE.ytPriceByType.yt_susdat = ytSusdatPrice;
+  LIVE.ytPriceByType.yt_jrusdat = ytJrusdatPrice;
+  LIVE.ytPriceByType.yt_srusdat = ytSrusdatPrice;
 
   syncYtPriceInputByType();
 
