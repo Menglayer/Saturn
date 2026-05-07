@@ -332,6 +332,11 @@ function findPendleMarketPrice(markets, symbolKeyword) {
   return market?.yt?.price?.usd ?? null;
 }
 
+function extractYtPriceFromMarket(payload) {
+  const data = typeof payload === 'string' ? parseJsonSafe(payload) : payload;
+  return data?.yt?.price?.usd ?? null;
+}
+
 function getSelectedYtType() {
   return document.getElementById('ytType')?.value || 'yt_usdat';
 }
@@ -375,28 +380,18 @@ async function fetchLiveMetrics() {
     return '';
   }
 
-  async function fetchPendlePriceByKeyword(keyword) {
-    const chainIds = [42161, 1, 8453, 10, 146, 5000, 80094, 56, 999, 9745];
-    const marketUrls = chainIds.map(chainId => `https://api-v2.pendle.finance/core/v1/${chainId}/markets?limit=200`);
-
-    for (const url of marketUrls) {
-      try {
-        const resp = await fetch(url, { cache: 'no-store' });
-        if (!resp.ok) continue;
-        const data = await resp.json();
-        const price = findPendleMarketPrice(data, keyword);
-        if (price !== null) return price;
-      } catch (_) {
-      }
-    }
-
-    return null;
+  async function fetchPendleMarketYtPrice(marketAddress) {
+    const direct = `https://api-v2.pendle.finance/core/v1/1/markets/${marketAddress}`;
+    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(direct)}`;
+    const raw = await fetchTextWithFallback([direct, proxy]);
+    if (!raw) return null;
+    return extractYtPriceFromMarket(raw);
   }
 
   const [saturnHtml, ytUsdatPrice, ytSusdatPrice] = await Promise.all([
     fetchTextWithFallback([saturnDirect, saturnProxy]),
-    fetchPendlePriceByKeyword('yt-usdat'),
-    fetchPendlePriceByKeyword('yt-susdat'),
+    fetchPendleMarketYtPrice('0x9afe7a057a09cf5da748d952078c9c99938b4329'),
+    fetchPendleMarketYtPrice('0x91bc86899c8391b6caaf26535b9cd82efe49a189'),
   ]);
 
   if (saturnHtml) {
