@@ -15,12 +15,7 @@ function calculateResults() {
   const ytPrice = parseFloat(document.getElementById('ytPrice')?.value) || 0;
   const ytBuyValue = parseFloat(document.getElementById('ytBuyValue')?.value) || 0;
 
-  // YT multiplier
-  let ytMultiplier = 10;
-  if (ytType === 'yt_usdat') ytMultiplier = 30;
-  if (ytType === 'yt_susdat') ytMultiplier = 10;
-  if (ytType === 'yt_jrusdat') ytMultiplier = 10;
-  if (ytType === 'yt_srusdat') ytMultiplier = 15;
+  const ytMultiplier = YT_MARKETS[ytType]?.multiplier || 0;
 
   // Calculate remaining days
   const today = new Date();

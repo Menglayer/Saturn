@@ -1099,6 +1099,8 @@ body.modal-open {
 .result-grid .card:nth-child(4) { animation-delay: 0.35s; }
 .result-grid .card:nth-child(5) { animation-delay: 0.4s; }
 .result-grid .card:nth-child(6) { animation-delay: 0.45s; }
+.result-grid .card:nth-child(7) { animation-delay: 0.5s; }
+.result-grid .card:nth-child(8) { animation-delay: 0.55s; }
 
 /* Selection */
 ::selection {

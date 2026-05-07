@@ -4,12 +4,7 @@
 
 const LIVE = {
   points: null,
-  ytPriceByType: {
-    yt_usdat: null,
-    yt_susdat: null,
-    yt_jrusdat: null,
-    yt_srusdat: null,
-  },
+  ytPriceByType: Object.fromEntries(Object.keys(YT_MARKETS).map(type => [type, null])),
 };
 
 function renderAll() {
@@ -36,10 +31,10 @@ function renderPromoBanner() {
   wrap.innerHTML = `
     <a class="promo-link" href="https://app.saturn.credit/portfolio" target="_blank" rel="noopener">
     <div class="promo-main">
-      <span class="promo-title">速度加入 Saturn 吧</span>
+      <span class="promo-title">${t('promoBanner')}</span>
       <div class="promo-invite-wrap">
-        <span class="promo-invite-label">加成邀请码</span>
-        <button class="invite-code-btn" id="inviteCodeBtn" onclick="copyInviteCode()" title="${t('copyInvite')}">
+        <span class="promo-invite-label">${t('promoInviteLabel')}</span>
+        <button class="invite-code-btn" id="inviteCodeBtn" onclick="copyInviteCode(event)" title="${t('copyInvite')}">
           SAT-CFF53D3C
         </button>
       </div>
@@ -53,12 +48,12 @@ function renderPromoBanner() {
   header.insertAdjacentElement('afterend', wrap);
 }
 
-function copyInviteCode() {
+function copyInviteCode(event) {
   const code = 'SAT-CFF53D3C';
   const toast = document.getElementById('copyToast');
-  if (window.event) {
-    window.event.preventDefault();
-    window.event.stopPropagation();
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
   }
 
   const showToast = () => {
@@ -168,10 +163,9 @@ function renderInputCards() {
       <div class="field">
         <label for="ytType">${t('yt_type')}</label>
         <select id="ytType" onchange="onYtTypeChange()">
-          <option value="yt_usdat">YT-USDat (30x)</option>
-          <option value="yt_susdat">YT-sUSDat (10x)</option>
-          <option value="yt_jrusdat">YT-jrUSDat (10x)</option>
-          <option value="yt_srusdat">YT-srUSDat (15x)</option>
+          ${Object.entries(YT_MARKETS).map(([type, config]) => `
+            <option value="${type}">${config.label} (${config.multiplier}x)</option>
+          `).join('')}
         </select>
       </div>
       <div class="field">
@@ -396,16 +390,6 @@ function parseJsonSafe(text) {
   }
 }
 
-function findPendleMarketPrice(markets, symbolKeyword) {
-  if (!markets || !Array.isArray(markets.results)) return null;
-  const loweredKeyword = symbolKeyword.toLowerCase();
-  const market = markets.results.find(item => {
-    const ytSymbol = item?.yt?.symbol || '';
-    return ytSymbol.toLowerCase().includes(loweredKeyword);
-  });
-  return market?.yt?.price?.usd ?? null;
-}
-
 function extractYtPriceFromMarket(payload) {
   const data = typeof payload === 'string' ? parseJsonSafe(payload) : payload;
   return data?.yt?.price?.usd ?? null;
@@ -497,21 +481,17 @@ async function fetchLiveMetrics() {
     return extractYtPriceFromMarket(raw);
   }
 
-  const [merklRaw, ytUsdatPrice, ytSusdatPrice, ytJrusdatPrice, ytSrusdatPrice] = await Promise.all([
+  const [merklRaw, ...ytPrices] = await Promise.all([
     fetchTextWithFallback([merklDirect, merklProxy]),
-    fetchPendleMarketYtPrice('0x9afe7a057a09cf5da748d952078c9c99938b4329'),
-    fetchPendleMarketYtPrice('0x91bc86899c8391b6caaf26535b9cd82efe49a189'),
-    fetchPendleMarketYtPrice('0x8cef2919a8cb98ad74e1e12392bc9f9fc4e3270a'),
-    fetchPendleMarketYtPrice('0x4237a8acbd0b5a2dec4aa83b1fd83f20162d02b8'),
+    ...Object.values(YT_MARKETS).map(config => fetchPendleMarketYtPrice(config.market)),
   ]);
 
   const merklData = parseJsonSafe(merklRaw);
   LIVE.points = parseMerklAmountToNumber(merklData?.amount, 18);
 
-  LIVE.ytPriceByType.yt_usdat = ytUsdatPrice;
-  LIVE.ytPriceByType.yt_susdat = ytSusdatPrice;
-  LIVE.ytPriceByType.yt_jrusdat = ytJrusdatPrice;
-  LIVE.ytPriceByType.yt_srusdat = ytSrusdatPrice;
+  Object.keys(YT_MARKETS).forEach((type, index) => {
+    LIVE.ytPriceByType[type] = ytPrices[index];
+  });
 
   syncYtPriceInputByType();
 

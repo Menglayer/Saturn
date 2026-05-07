@@ -26,6 +26,29 @@ const DEFAULTS = {
   seasonStartDate: '2026-04-08',
 };
 
+const YT_MARKETS = {
+  yt_usdat: {
+    label: 'YT-USDat',
+    multiplier: 30,
+    market: '0x9afe7a057a09cf5da748d952078c9c99938b4329',
+  },
+  yt_susdat: {
+    label: 'YT-sUSDat',
+    multiplier: 10,
+    market: '0x91bc86899c8391b6caaf26535b9cd82efe49a189',
+  },
+  yt_jrusdat: {
+    label: 'YT-jrUSDat',
+    multiplier: 10,
+    market: '0x8cef2919a8cb98ad74e1e12392bc9f9fc4e3270a',
+  },
+  yt_srusdat: {
+    label: 'YT-srUSDat',
+    multiplier: 15,
+    market: '0x4237a8acbd0b5a2dec4aa83b1fd83f20162d02b8',
+  },
+};
+
 const CATEGORY_COLORS = {
   hold:   '#f0b90b',
   curve:  '#00d4aa',

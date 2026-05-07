@@ -26,7 +26,7 @@ const I18N = {
     yt_buyValue: '买入价值 (USD)',
     yt_quantity: 'YT 数量',
     yt_dailyPoints: 'YT 每日积分',
-    yt_formula: '说明：YT 积分 = YT数量 × 持有小时 × (每日积分/24) × 倍数。到期 = min(接口到期, Season结束)。',
+    yt_formula: '说明：YT 积分按 Season 剩余天数估算，并已扣除 Pendle 5% 积分抽水。',
     yt_totalMiles: 'YT 至结束可获 Points',
     yt_airdropValue: 'YT 预估空投价值 & ROI',
     yt_contribution: '贡献',
@@ -36,8 +36,8 @@ const I18N = {
     fdv: 'TGE 时 FDV (USD)',
     airdropPercent: '空投比例 (%)',
     dailyGrowthRate: '每日增速 (%)',
-    networkCurrentDaily: '(可选) 全网当前每日 Points',
-    networkCurrentDaily_hint: '若未知可留空或 0',
+    networkCurrentDaily: '(备用) 全网当前每日 Points',
+    networkCurrentDaily_hint: '仅实时总量不可用时使用',
     
     // Card C
     cardC_title: '时间与数据',
@@ -53,11 +53,9 @@ const I18N = {
     myTotalPoints_sub: '含当前积分 + 持仓累积',
     networkTotalPoints: '预测全网累计 (Season End)',
     networkTotalPoints_sub: '基于每日增速推算',
-    myShare: '空投价值 / 我的占比',
     myAirdropValue: '预估空投价值',
     roi: '积分 APY',
     pointsApyNote: '仅按仓位计算，不包含 YT',
-    pointsApyBreakdown: 'YT APY / 非YT APY',
     ytRoiCard: 'YT ROI',
     totalInvestment: '总投入',
     
@@ -74,7 +72,8 @@ const I18N = {
     // Misc
     langSwitch: 'EN',
     showMultipliers: '查看倍率表',
-    promoBanner: '速度加入 Saturn 吧 加成邀请码',
+    promoBanner: '速度加入 Saturn 吧',
+    promoInviteLabel: '加成邀请码',
     promoHint: '邀请码使用位置：portfolio → Total Point下面 → Apply Ref',
     copyInvite: '点击复制',
     copySuccess: '复制成功',
@@ -110,7 +109,7 @@ const I18N = {
     yt_buyValue: 'Buy Value (USD)',
     yt_quantity: 'YT Quantity',
     yt_dailyPoints: 'YT Daily Points',
-    yt_formula: 'Note: YT Points = YT Qty × Hours Held × (Daily Points/24) × Multiplier. Maturity = min(pool maturity, season end).',
+    yt_formula: 'Note: YT points are estimated through season end and already exclude Pendle\'s 5% points fee.',
     yt_totalMiles: 'YT Points Until Season End',
     yt_airdropValue: 'YT Est. Airdrop Value & ROI',
     yt_contribution: 'Contribution',
@@ -120,8 +119,8 @@ const I18N = {
     fdv: 'FDV at TGE (USD)',
     airdropPercent: 'Airdrop Allocation (%)',
     dailyGrowthRate: 'Daily Growth Rate (%)',
-    networkCurrentDaily: '(Optional) Network Current Daily Points',
-    networkCurrentDaily_hint: 'Leave empty or 0 if unknown',
+    networkCurrentDaily: '(Fallback) Network Current Daily Points',
+    networkCurrentDaily_hint: 'Used only if live total is unavailable',
     
     // Card C
     cardC_title: 'Time & Data',
@@ -137,11 +136,9 @@ const I18N = {
     myTotalPoints_sub: 'Including current + position accumulation',
     networkTotalPoints: 'Predicted Network Total (Season End)',
     networkTotalPoints_sub: 'Based on daily growth rate',
-    myShare: 'Airdrop Value / My Share',
     myAirdropValue: 'Est. Airdrop Value',
     roi: 'Points APY',
     pointsApyNote: 'Position-only, excludes YT',
-    pointsApyBreakdown: 'YT APY / Non-YT APY',
     ytRoiCard: 'YT ROI',
     totalInvestment: 'Total Investment',
     
@@ -158,7 +155,8 @@ const I18N = {
     // Misc
     langSwitch: '中',
     showMultipliers: 'Multiplier Table',
-    promoBanner: 'Join Saturn now with bonus invite code',
+    promoBanner: 'Join Saturn now',
+    promoInviteLabel: 'Bonus invite code',
     promoHint: 'Use it at: portfolio -> under Total Point -> Apply Ref',
     copyInvite: 'Click to copy',
     copySuccess: 'Copied',
