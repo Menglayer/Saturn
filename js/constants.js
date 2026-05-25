@@ -20,7 +20,7 @@ const DEFAULTS = {
   positionAmount: 1000,
   fdv: 200_000_000,
   airdropPercent: 5,
-  dailyGrowthRate: 2.5,
+  dailyGrowthRate: 3,
   networkCurrentDaily: 0,
   seasonEndDate: '2026-08-08',
   seasonStartDate: '2026-04-08',
