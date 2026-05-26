@@ -490,12 +490,15 @@ async function fetchLiveMetrics() {
   ]);
 
   const merklRecipientData = parseJsonSafe(merklRecipientRaw);
-  const merklRecipientPoints = parseMerklAmountToNumber(merklRecipientData?.amount, 18);
+  const merklRecipientAmount = Array.isArray(merklRecipientData)
+    ? merklRecipientData[0]?.amount
+    : merklRecipientData?.amount;
+  const merklRecipientPoints = parseMerklAmountToNumber(merklRecipientAmount, 18);
   const merklData = parseJsonSafe(merklRaw);
   const merklPoints = parseMerklAmountToNumber(merklData?.amount, 18);
   LIVE.points = (merklRecipientPoints === null && merklPoints === null)
     ? null
-    : Math.max(0, (merklRecipientPoints || 0) + (merklPoints || 0));
+    : Math.max(0, (merklPoints || 0) - (merklRecipientPoints || 0));
 
   Object.keys(YT_MARKETS).forEach((type, index) => {
     LIVE.ytPriceByType[type] = ytPrices[index];
