@@ -456,6 +456,8 @@ function renderLiveMetrics() {
 }
 
 async function fetchLiveMetrics() {
+  const merklRecipientDirect = 'https://api.merkl.xyz/v4/rewards/token/?chainId=1&address=0xD223bbdd0421E394C0df9dFfe568f1dADfFd6f85&recipient=0x80c6a512b548229226c0676d6fdbaff81d325990';
+  const merklRecipientProxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(merklRecipientDirect)}`;
   const merklDirect = 'https://api.merkl.xyz/v4/rewards/token/total?chainId=1&address=0xD223bbdd0421E394C0df9dFfe568f1dADfFd6f85';
   const merklProxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(merklDirect)}`;
 
@@ -481,14 +483,19 @@ async function fetchLiveMetrics() {
     return extractYtPriceFromMarket(raw);
   }
 
-  const [merklRaw, ...ytPrices] = await Promise.all([
+  const [merklRecipientRaw, merklRaw, ...ytPrices] = await Promise.all([
+    fetchTextWithFallback([merklRecipientDirect, merklRecipientProxy]),
     fetchTextWithFallback([merklDirect, merklProxy]),
     ...Object.values(YT_MARKETS).map(config => fetchPendleMarketYtPrice(config.market)),
   ]);
 
+  const merklRecipientData = parseJsonSafe(merklRecipientRaw);
+  const merklRecipientPoints = parseMerklAmountToNumber(merklRecipientData?.amount, 18);
   const merklData = parseJsonSafe(merklRaw);
   const merklPoints = parseMerklAmountToNumber(merklData?.amount, 18);
-  LIVE.points = merklPoints === null ? null : Math.max(0, merklPoints - 242_000_000_000);
+  LIVE.points = (merklRecipientPoints === null && merklPoints === null)
+    ? null
+    : Math.max(0, (merklRecipientPoints || 0) + (merklPoints || 0));
 
   Object.keys(YT_MARKETS).forEach((type, index) => {
     LIVE.ytPriceByType[type] = ytPrices[index];
