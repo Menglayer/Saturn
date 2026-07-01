@@ -38,7 +38,7 @@ function renderPromoBanner() {
       <div class="promo-invite-wrap">
         <span class="promo-invite-label">${t('promoInviteLabel')}</span>
         <button class="invite-code-btn" id="inviteCodeBtn" onclick="copyInviteCode(event)" title="${t('copyInvite')}">
-          SAT-CFF53D3C
+          SAT-694419FE
         </button>
       </div>
     </div>
@@ -52,7 +52,7 @@ function renderPromoBanner() {
 }
 
 function copyInviteCode(event) {
-  const code = 'SAT-CFF53D3C';
+  const code = 'SAT-694419FE';
   const toast = document.getElementById('copyToast');
   if (event) {
     event.preventDefault();
