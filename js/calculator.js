@@ -39,6 +39,7 @@ function calculateResults() {
     ? Math.max(0, Math.ceil((ytExpiryDate - today) / (1000 * 60 * 60 * 24)))
     : remainingDays;
   const ytPointDays = Math.min(remainingDays, ytDaysToExpiry);
+  const ytResidualDays = Math.max(0, ytDaysToExpiry - ytPointDays);
 
   // Update days remaining display
   const daysEl = document.getElementById('daysRemaining');
@@ -115,13 +116,17 @@ function calculateResults() {
     ? airdropPool * (ytTotalPoints / networkTotalPoints)
     : 0;
 
-  // YT matures to zero. Net return includes airdrop value plus UY base yield, minus the YT purchase cost.
+  // Season 1 ends before YT expiry, so value YT at season end instead of forcing it to zero.
   const ytBaseApy = Math.max(0, Number(ytMeta.baseApy) || 0);
   const ytUnderlyingPrice = Math.max(0, Number(ytMeta.underlyingPrice) || 1);
-  const ytBaseYieldValue = ytQuantity * ytUnderlyingPrice * ytBaseApy * (ytDaysToExpiry / 365);
-  const ytMaturityLoss = ytBuyValue;
-  const ytGrossValue = ytAirdropValue + ytBaseYieldValue;
-  const ytNetValue = ytGrossValue - ytMaturityLoss;
+  const ytCurrentMarketValue = ytQuantity * ytPrice;
+  const ytBaseYieldValue = ytQuantity * ytUnderlyingPrice * ytBaseApy * (ytPointDays / 365);
+  const ytResidualValue = ytDaysToExpiry > 0
+    ? ytCurrentMarketValue * (ytResidualDays / ytDaysToExpiry)
+    : 0;
+  const ytPurchaseCost = ytBuyValue;
+  const ytGrossValue = ytAirdropValue + ytBaseYieldValue + ytResidualValue;
+  const ytNetValue = ytGrossValue - ytPurchaseCost;
 
   const ytRoi = ytBuyValue > 0
     ? (ytNetValue / ytBuyValue) * 100
@@ -156,10 +161,12 @@ function calculateResults() {
     ytTotalPoints,
     ytPointDays,
     ytDaysToExpiry,
+    ytResidualDays,
     ytBaseApy,
     ytBaseYieldValue,
+    ytResidualValue,
     ytAirdropValue,
-    ytMaturityLoss,
+    ytPurchaseCost,
     ytGrossValue,
     ytNetValue,
     ytRoi,
@@ -197,7 +204,7 @@ function updateResults() {
 
   const ytRoiEl = document.getElementById('result_ytRoi');
   if (ytRoiEl) {
-    ytRoiEl.textContent = `${t('yt_airdrop')}: $${formatNumber(r.ytAirdropValue, 0)} · ${t('yt_baseYield')}: $${formatNumber(r.ytBaseYieldValue, 0)} · ${t('yt_maturityLoss')}: -$${formatNumber(r.ytMaturityLoss, 0)}`;
+    ytRoiEl.textContent = `${t('yt_airdrop')}: $${formatNumber(r.ytAirdropValue, 0)} · ${t('yt_baseYield')}: $${formatNumber(r.ytBaseYieldValue, 0)} · ${t('yt_residualValue')}: $${formatNumber(r.ytResidualValue, 0)} · ${t('yt_purchaseCost')}: -$${formatNumber(r.ytPurchaseCost, 0)}`;
   }
 
   const ytOnlyRoiEl = document.getElementById('result_ytOnlyRoi');
