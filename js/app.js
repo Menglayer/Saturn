@@ -446,12 +446,12 @@ function extractYtMarketLiveData(payload, config = {}) {
     if (liveApy > 0) {
       baseApy = liveApy;
       baseApySource = 'live';
-    } else if (Number.isFinite(uyFloorApy) && uyFloorApy > 0) {
-      baseApy = uyFloorApy;
-      baseApySource = 'uyFloor';
     } else if (Number.isFinite(fallbackApy) && fallbackApy > 0) {
       baseApy = fallbackApy;
       baseApySource = 'fallback';
+    } else if (Number.isFinite(uyFloorApy) && uyFloorApy > 0) {
+      baseApy = uyFloorApy;
+      baseApySource = 'uyFloor';
     }
   }
 
