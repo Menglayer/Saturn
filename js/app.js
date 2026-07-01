@@ -5,6 +5,9 @@
 const LIVE = {
   points: null,
   ytPriceByType: Object.fromEntries(Object.keys(YT_MARKETS).map(type => [type, null])),
+  aspectaFdv: null,
+  aspectaKeyPrice: null,
+  aspectaStatus: 'syncing',
 };
 
 function renderAll() {
@@ -104,6 +107,10 @@ function renderHeader() {
           <div class="live-badge">
             <span class="live-label">${t('livePoints')}</span>
             <span class="live-value" id="livePointsValue">${t('liveUpdating')}...</span>
+          </div>
+          <div class="live-badge">
+            <span class="live-label">${t('liveFdv')}</span>
+            <span class="live-value" id="liveFdvValue">${t('liveUpdating')}...</span>
           </div>
         </div>
         <button class="btn-pill" onclick="toggleLang()" id="langBtn">${t('langSwitch')}</button>
@@ -214,6 +221,7 @@ function renderInputCards() {
       <div class="field">
         <label for="fdv">${t('fdv')}</label>
         <input type="number" id="fdv" value="${DEFAULTS.fdv}" min="0" step="1000000" oninput="updateResults()">
+        <div class="field-hint" id="fdvLiveInline">${t('fdvAutoHint')}</div>
       </div>
       <div class="field">
         <label for="airdropPercent">${t('airdropPercent')}</label>
@@ -414,6 +422,132 @@ function parseMerklAmountToNumber(amountStr, decimals = 18) {
   return Number.isFinite(num) ? num : null;
 }
 
+function formatUnits(value, decimals = 18) {
+  const amount = typeof value === 'bigint' ? value : BigInt(value);
+  if (decimals === 0) return amount.toString();
+
+  const negative = amount < 0n;
+  const raw = (negative ? -amount : amount).toString().padStart(decimals + 1, '0');
+  const integer = raw.slice(0, raw.length - decimals) || '0';
+  const fraction = raw.slice(raw.length - decimals).replace(/0+$/, '');
+  return `${negative ? '-' : ''}${integer}${fraction ? `.${fraction}` : ''}`;
+}
+
+function unitsToNumber(value, decimals = 18) {
+  const num = Number(formatUnits(value, decimals));
+  return Number.isFinite(num) ? num : null;
+}
+
+function decodeUint256Word(data, index = 0) {
+  const clean = String(data || '').replace(/^0x/, '');
+  const word = clean.slice(index * 64, index * 64 + 64);
+  return word ? BigInt(`0x${word}`) : 0n;
+}
+
+function normalizeAddress(value) {
+  return typeof value === 'string' && /^0x[a-fA-F0-9]{40}$/.test(value) ? value : null;
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
+  if (typeof AbortController === 'undefined') {
+    return fetch(url, options);
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function normalizeAspectaAsset(rawAsset = {}) {
+  const source = rawAsset || {};
+  const fallback = ASPECTA_PREMARKET.fallbackAsset;
+  const assetDecimals = Number(source.decimals);
+  const paymentTokenDecimals = Number(source.payment_token_decimals);
+
+  return {
+    poolAddress: normalizeAddress(source.pool_address) || fallback.poolAddress,
+    paymentTokenAddress: normalizeAddress(source.payment_token_address) || fallback.paymentTokenAddress,
+    assetDecimals: Number.isFinite(assetDecimals) ? assetDecimals : fallback.assetDecimals,
+    paymentTokenDecimals: Number.isFinite(paymentTokenDecimals)
+      ? paymentTokenDecimals
+      : fallback.paymentTokenDecimals,
+  };
+}
+
+async function fetchAspectaAssetMetadata() {
+  try {
+    const resp = await fetchWithTimeout(ASPECTA_PREMARKET.assetApi, { cache: 'no-store' }, 6000);
+    if (!resp.ok) throw new Error('Aspecta metadata unavailable');
+    const payload = await resp.json();
+    const rows = Array.isArray(payload?.data)
+      ? payload.data
+      : Array.isArray(payload?.data?.list)
+        ? payload.data.list
+        : [];
+    const saturn = rows.find(item => item?.project_data?.title === 'Saturn' || item?.wallet_address === 'Saturn') || rows[0];
+    return normalizeAspectaAsset(saturn);
+  } catch (_) {
+    return normalizeAspectaAsset();
+  }
+}
+
+async function fetchBscRpcCall(to, data) {
+  for (const rpcUrl of ASPECTA_PREMARKET.rpcUrls) {
+    try {
+      const resp = await fetchWithTimeout(rpcUrl, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: Date.now(),
+          method: 'eth_call',
+          params: [{ to, data }, 'latest'],
+        }),
+      }, 7000);
+      if (!resp.ok) continue;
+      const payload = await resp.json();
+      if (payload?.result && payload.result !== '0x') return payload.result;
+    } catch (_) {
+    }
+  }
+  return null;
+}
+
+async function fetchTokenDecimals(tokenAddress, fallbackDecimals) {
+  const raw = await fetchBscRpcCall(tokenAddress, ASPECTA_PREMARKET.selectors.decimals);
+  if (!raw) return fallbackDecimals;
+
+  const decimals = Number(decodeUint256Word(raw, 0));
+  return Number.isFinite(decimals) && decimals >= 0 && decimals <= 36
+    ? decimals
+    : fallbackDecimals;
+}
+
+async function fetchAspectaPremarketFdv() {
+  const asset = await fetchAspectaAssetMetadata();
+  const [currentPriceRaw, settlementRaw, paymentTokenDecimals] = await Promise.all([
+    fetchBscRpcCall(asset.poolAddress, ASPECTA_PREMARKET.selectors.getCurrentPrice),
+    fetchBscRpcCall(asset.poolAddress, ASPECTA_PREMARKET.selectors.getSettlementInfo),
+    fetchTokenDecimals(asset.paymentTokenAddress, asset.paymentTokenDecimals),
+  ]);
+
+  if (!currentPriceRaw || !settlementRaw) return null;
+
+  const currentPrice = decodeUint256Word(currentPriceRaw, 0);
+  const redeemRatioRaw = decodeUint256Word(settlementRaw, 2);
+  const keyPriceUsd = unitsToNumber(currentPrice, paymentTokenDecimals);
+  const redeemRatio = unitsToNumber(redeemRatioRaw, 18);
+  const fdvUsd = keyPriceUsd && redeemRatio ? keyPriceUsd / redeemRatio : null;
+
+  return fdvUsd && fdvUsd > 0
+    ? { fdvUsd, keyPriceUsd, redeemRatio }
+    : null;
+}
+
 function getSelectedYtType() {
   return document.getElementById('ytType')?.value || 'yt_usdat';
 }
@@ -428,6 +562,13 @@ function syncYtPriceInputByType() {
   }
 }
 
+function syncFdvInputFromAspecta() {
+  const fdvInput = document.getElementById('fdv');
+  if (fdvInput && LIVE.aspectaFdv !== null) {
+    fdvInput.value = Math.round(LIVE.aspectaFdv);
+  }
+}
+
 function onYtTypeChange() {
   syncYtPriceInputByType();
   renderLiveMetrics();
@@ -436,13 +577,34 @@ function onYtTypeChange() {
 
 function renderLiveMetrics() {
   const pointsEl = document.getElementById('livePointsValue');
+  const fdvEl = document.getElementById('liveFdvValue');
+  const fdvInlineEl = document.getElementById('fdvLiveInline');
   const ytInlineEl = document.getElementById('ytLivePriceInline');
-  if (!pointsEl) return;
 
-  if (LIVE.points === null) {
+  if (pointsEl && LIVE.points === null) {
     pointsEl.textContent = `${t('liveUnavailable')}`;
-  } else {
+  } else if (pointsEl) {
     pointsEl.textContent = formatNumber(LIVE.points, 1);
+  }
+
+  const fdvText = LIVE.aspectaStatus === 'syncing'
+    ? `${t('liveUpdating')}...`
+    : LIVE.aspectaFdv === null
+      ? t('liveUnavailable')
+      : `$${formatNumber(LIVE.aspectaFdv, 0)}`;
+
+  if (fdvEl) {
+    fdvEl.textContent = fdvText;
+  }
+
+  if (fdvInlineEl) {
+    if (LIVE.aspectaStatus === 'syncing') {
+      fdvInlineEl.textContent = `${t('liveFdv')}: ${t('liveUpdating')}...`;
+    } else if (LIVE.aspectaFdv === null) {
+      fdvInlineEl.textContent = `${t('liveFdv')}: ${t('liveUnavailable')} · ${t('fdvAutoHint')}`;
+    } else {
+      fdvInlineEl.textContent = `${t('liveFdv')}: $${formatNumber(LIVE.aspectaFdv, 0)} · ${t('liveAspectaKeyPrice')}: $${formatNumber(LIVE.aspectaKeyPrice, 4)}`;
+    }
   }
 
   const selectedType = getSelectedYtType();
@@ -464,7 +626,7 @@ async function fetchLiveMetrics() {
   async function fetchTextWithFallback(urls) {
     for (const url of urls) {
       try {
-        const resp = await fetch(url, { cache: 'no-store' });
+        const resp = await fetchWithTimeout(url, { cache: 'no-store' }, 8000);
         if (resp.ok) {
           const text = await resp.text();
           if (text) return text;
@@ -475,18 +637,20 @@ async function fetchLiveMetrics() {
     return '';
   }
 
-  async function fetchPendleMarketYtPrice(marketAddress) {
-    const direct = `https://api-v2.pendle.finance/core/v1/1/markets/${marketAddress}`;
+  async function fetchPendleMarketYtPrice(config) {
+    const direct = `https://api-v2.pendle.finance/core/v1/${config.chainId || 1}/markets/${config.market}`;
     const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(direct)}`;
     const raw = await fetchTextWithFallback([direct, proxy]);
     if (!raw) return null;
     return extractYtPriceFromMarket(raw);
   }
 
-  const [merklRecipientRaw, merklRaw, ...ytPrices] = await Promise.all([
+  const marketConfigs = Object.values(YT_MARKETS);
+  const [merklRecipientRaw, merklRaw, aspectaResult, ...ytPrices] = await Promise.all([
     fetchTextWithFallback([merklRecipientDirect, merklRecipientProxy]),
     fetchTextWithFallback([merklDirect, merklProxy]),
-    ...Object.values(YT_MARKETS).map(config => fetchPendleMarketYtPrice(config.market)),
+    fetchAspectaPremarketFdv().catch(() => null),
+    ...marketConfigs.map(config => fetchPendleMarketYtPrice(config)),
   ]);
 
   const merklRecipientData = parseJsonSafe(merklRecipientRaw);
@@ -503,6 +667,15 @@ async function fetchLiveMetrics() {
   Object.keys(YT_MARKETS).forEach((type, index) => {
     LIVE.ytPriceByType[type] = ytPrices[index];
   });
+
+  if (aspectaResult) {
+    LIVE.aspectaFdv = aspectaResult.fdvUsd;
+    LIVE.aspectaKeyPrice = aspectaResult.keyPriceUsd;
+    LIVE.aspectaStatus = 'ready';
+    syncFdvInputFromAspecta();
+  } else if (LIVE.aspectaFdv === null) {
+    LIVE.aspectaStatus = 'unavailable';
+  }
 
   syncYtPriceInputByType();
 
@@ -583,7 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initParticles();
   renderAll();
   // Add a default position
-  addPosition('hold_usdat', 1000);
+  addPosition('hold_usdat_eth', 1000);
   fetchLiveMetrics();
   setInterval(fetchLiveMetrics, 60 * 1000);
 });

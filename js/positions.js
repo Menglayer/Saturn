@@ -5,7 +5,7 @@
 let positions = [];
 let positionIdCounter = 0;
 
-function addPosition(strategyId = 'hold_usdat', amount = 1000) {
+function addPosition(strategyId = 'hold_usdat_eth', amount = 1000) {
   const id = ++positionIdCounter;
   positions.push({ id, strategyId, amount });
   renderPositions();
