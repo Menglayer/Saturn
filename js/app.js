@@ -5,6 +5,7 @@
 const LIVE = {
   points: null,
   ytPriceByType: Object.fromEntries(Object.keys(YT_MARKETS).map(type => [type, null])),
+  ytMetaByType: Object.fromEntries(Object.keys(YT_MARKETS).map(type => [type, null])),
   aspectaFdv: null,
   aspectaKeyPrice: null,
   aspectaStatus: 'syncing',
@@ -180,6 +181,20 @@ function renderInputCards() {
         <input type="number" id="ytPrice" value="0" min="0" step="0.0001" oninput="updateResults()">
         <div class="field-hint" id="ytLivePriceInline">${t('liveYtPrice')}: ${t('liveUpdating')}...</div>
       </div>
+      <div class="field field-readonly">
+        <label>${t('yt_baseApy')}</label>
+        <div class="daily-points-display">
+          <span class="category-dot" style="background:var(--accent-green)"></span>
+          <span id="ytBaseApy" class="daily-value">0.00%</span>
+        </div>
+      </div>
+      <div class="field field-readonly">
+        <label>${t('yt_expiry')}</label>
+        <div class="daily-points-display">
+          <span class="category-dot" style="background:var(--accent-blue)"></span>
+          <span id="ytExpiry" class="daily-value">--</span>
+        </div>
+      </div>
       <div class="field">
         <label for="ytBuyValue">${t('yt_buyValue')}</label>
         <input type="number" id="ytBuyValue" value="0" min="0" step="100" oninput="updateResults()">
@@ -298,7 +313,7 @@ function renderResultCards() {
     <div class="card card-result card-ytroi">
       <div class="result-label">${t('ytRoiCard')}</div>
       <div class="result-value" id="result_ytOnlyRoi" data-current-value="0">0.00%</div>
-      <div class="result-sub">YT only</div>
+      <div class="result-sub">${t('ytNetRoiNote')}</div>
     </div>
     <div class="card card-result">
       <div class="result-label">${t('myTotalPoints')}</div>
@@ -316,7 +331,7 @@ function renderResultCards() {
       <div class="result-sub" id="result_ytContribution">YT ${t('yt_contribution')}: 0</div>
     </div>
     <div class="card card-result card-yt">
-      <div class="result-label">${t('yt_airdropValue')}</div>
+      <div class="result-label">${t('yt_netValue')}</div>
       <div class="result-value" id="result_ytAirdropValue" data-current-value="0">≈ $0.00</div>
       <div class="result-sub" id="result_ytRoi">YT APY: 0.00%</div>
     </div>
@@ -401,6 +416,52 @@ function parseJsonSafe(text) {
 function extractYtPriceFromMarket(payload) {
   const data = typeof payload === 'string' ? parseJsonSafe(payload) : payload;
   return data?.yt?.price?.usd ?? null;
+}
+
+function firstPositiveNumber(values) {
+  for (const value of values) {
+    const num = Number(value);
+    if (Number.isFinite(num) && num > 0) return num;
+  }
+  return 0;
+}
+
+function extractYtMarketLiveData(payload, config = {}) {
+  const data = typeof payload === 'string' ? parseJsonSafe(payload) : payload;
+  const price = Number(data?.yt?.price?.usd);
+  const underlyingPrice = Number(
+    data?.underlyingAsset?.price?.usd
+      ?? data?.sy?.price?.usd
+      ?? data?.basePricingAsset?.price?.usd
+      ?? 1
+  );
+
+  let baseApy = 0;
+  let baseApySource = 'none';
+  if (config.hasBaseYield !== false) {
+    const liveApy = firstPositiveNumber([data?.underlyingInterestApy, data?.underlyingApy]);
+    const uyFloorApy = Number(data?.extendedInfo?.yieldRange?.min);
+    const fallbackApy = Number(config.baseApyFallback);
+
+    if (liveApy > 0) {
+      baseApy = liveApy;
+      baseApySource = 'live';
+    } else if (Number.isFinite(uyFloorApy) && uyFloorApy > 0) {
+      baseApy = uyFloorApy;
+      baseApySource = 'uyFloor';
+    } else if (Number.isFinite(fallbackApy) && fallbackApy > 0) {
+      baseApy = fallbackApy;
+      baseApySource = 'fallback';
+    }
+  }
+
+  return {
+    price: Number.isFinite(price) ? price : null,
+    baseApy,
+    baseApySource,
+    underlyingPrice: Number.isFinite(underlyingPrice) && underlyingPrice > 0 ? underlyingPrice : 1,
+    expiry: data?.yt?.expiry || null,
+  };
 }
 
 function parseMerklAmountToNumber(amountStr, decimals = 18) {
@@ -552,6 +613,25 @@ function getSelectedYtType() {
   return document.getElementById('ytType')?.value || 'yt_usdat';
 }
 
+function getYtMeta(type = getSelectedYtType()) {
+  const config = YT_MARKETS[type] || {};
+  const liveMeta = LIVE.ytMetaByType[type] || {};
+  const fallbackBaseApy = config.hasBaseYield === false ? 0 : Number(config.baseApyFallback) || 0;
+  return {
+    baseApy: Number.isFinite(liveMeta.baseApy) ? liveMeta.baseApy : fallbackBaseApy,
+    baseApySource: liveMeta.baseApySource || (fallbackBaseApy > 0 ? 'fallback' : 'none'),
+    underlyingPrice: Number.isFinite(liveMeta.underlyingPrice) ? liveMeta.underlyingPrice : 1,
+    expiry: liveMeta.expiry || config.expiry || null,
+  };
+}
+
+function formatDateLabel(value) {
+  if (!value) return '--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '--';
+  return date.toISOString().slice(0, 10);
+}
+
 function syncYtPriceInputByType() {
   const ytPriceInput = document.getElementById('ytPrice');
   if (!ytPriceInput) return;
@@ -580,6 +660,8 @@ function renderLiveMetrics() {
   const fdvEl = document.getElementById('liveFdvValue');
   const fdvInlineEl = document.getElementById('fdvLiveInline');
   const ytInlineEl = document.getElementById('ytLivePriceInline');
+  const ytBaseApyEl = document.getElementById('ytBaseApy');
+  const ytExpiryEl = document.getElementById('ytExpiry');
 
   if (pointsEl && LIVE.points === null) {
     pointsEl.textContent = `${t('liveUnavailable')}`;
@@ -609,11 +691,24 @@ function renderLiveMetrics() {
 
   const selectedType = getSelectedYtType();
   const ytPrice = LIVE.ytPriceByType[selectedType];
+  const ytMeta = getYtMeta(selectedType);
+  const baseApyLabel = ytMeta.baseApy > 0
+    ? `${formatNumber(ytMeta.baseApy * 100, 2)}%`
+    : t('yt_noBaseYield');
+  const expiryLabel = formatDateLabel(ytMeta.expiry);
 
   if (ytInlineEl) {
     ytInlineEl.textContent = ytPrice === null
-      ? `${t('liveYtPrice')}: ${t('liveUnavailable')}`
-      : `${t('liveYtPrice')}: $${formatNumber(ytPrice, 4)}`;
+      ? `${t('liveYtPrice')}: ${t('liveUnavailable')} · ${t('yt_baseApy')}: ${baseApyLabel}`
+      : `${t('liveYtPrice')}: $${formatNumber(ytPrice, 4)} · ${t('yt_baseApy')}: ${baseApyLabel}`;
+  }
+
+  if (ytBaseApyEl) {
+    ytBaseApyEl.textContent = baseApyLabel;
+  }
+
+  if (ytExpiryEl) {
+    ytExpiryEl.textContent = expiryLabel;
   }
 }
 
@@ -642,11 +737,11 @@ async function fetchLiveMetrics() {
     const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(direct)}`;
     const raw = await fetchTextWithFallback([direct, proxy]);
     if (!raw) return null;
-    return extractYtPriceFromMarket(raw);
+    return extractYtMarketLiveData(raw, config);
   }
 
   const marketConfigs = Object.values(YT_MARKETS);
-  const [merklRecipientRaw, merklRaw, aspectaResult, ...ytPrices] = await Promise.all([
+  const [merklRecipientRaw, merklRaw, aspectaResult, ...ytMarketData] = await Promise.all([
     fetchTextWithFallback([merklRecipientDirect, merklRecipientProxy]),
     fetchTextWithFallback([merklDirect, merklProxy]),
     fetchAspectaPremarketFdv().catch(() => null),
@@ -665,7 +760,9 @@ async function fetchLiveMetrics() {
     : Math.max(0, (merklPoints || 0) - (merklRecipientPoints || 0));
 
   Object.keys(YT_MARKETS).forEach((type, index) => {
-    LIVE.ytPriceByType[type] = ytPrices[index];
+    const data = ytMarketData[index];
+    LIVE.ytPriceByType[type] = data?.price ?? null;
+    LIVE.ytMetaByType[type] = data || null;
   });
 
   if (aspectaResult) {

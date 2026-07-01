@@ -15,7 +15,15 @@ function calculateResults() {
   const ytPrice = parseFloat(document.getElementById('ytPrice')?.value) || 0;
   const ytBuyValue = parseFloat(document.getElementById('ytBuyValue')?.value) || 0;
 
-  const ytMultiplier = YT_MARKETS[ytType]?.multiplier || 0;
+  const ytMarketConfig = YT_MARKETS[ytType] || {};
+  const ytMultiplier = ytMarketConfig.multiplier || 0;
+  const ytMeta = typeof getYtMeta === 'function'
+    ? getYtMeta(ytType)
+    : {
+      baseApy: ytMarketConfig.hasBaseYield === false ? 0 : Number(ytMarketConfig.baseApyFallback) || 0,
+      underlyingPrice: 1,
+      expiry: ytMarketConfig.expiry || null,
+    };
 
   // Calculate remaining days
   const today = new Date();
@@ -23,6 +31,14 @@ function calculateResults() {
   const endDate = new Date(seasonEndDate);
   endDate.setHours(0, 0, 0, 0);
   const remainingDays = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)));
+  const ytExpiryDate = ytMeta.expiry ? new Date(ytMeta.expiry) : null;
+  if (ytExpiryDate && !Number.isNaN(ytExpiryDate.getTime())) {
+    ytExpiryDate.setHours(0, 0, 0, 0);
+  }
+  const ytDaysToExpiry = ytExpiryDate && !Number.isNaN(ytExpiryDate.getTime())
+    ? Math.max(0, Math.ceil((ytExpiryDate - today) / (1000 * 60 * 60 * 24)))
+    : remainingDays;
+  const ytPointDays = Math.min(remainingDays, ytDaysToExpiry);
 
   // Update days remaining display
   const daysEl = document.getElementById('daysRemaining');
@@ -38,8 +54,8 @@ function calculateResults() {
   // Simplified for full-day holding: YT daily points = YT quantity × multiplier
   const ytDailyPointsRaw = ytQuantity * ytMultiplier;
   const ytDailyPoints = ytDailyPointsRaw * 0.95;
-  // Total YT points until season end
-  const ytTotalPoints = ytDailyPoints * remainingDays;
+  // Total YT points until season end or YT expiry, whichever comes first.
+  const ytTotalPoints = ytDailyPoints * ytPointDays;
 
   // Calculate total daily points from positions + YT only
   const positionDailyTotal = getPositionsDailyTotal();
@@ -99,9 +115,16 @@ function calculateResults() {
     ? airdropPool * (ytTotalPoints / networkTotalPoints)
     : 0;
 
-  // YT ROI = final airdrop value / buy value
+  // YT matures to zero. Net return includes airdrop value plus UY base yield, minus the YT purchase cost.
+  const ytBaseApy = Math.max(0, Number(ytMeta.baseApy) || 0);
+  const ytUnderlyingPrice = Math.max(0, Number(ytMeta.underlyingPrice) || 1);
+  const ytBaseYieldValue = ytQuantity * ytUnderlyingPrice * ytBaseApy * (ytDaysToExpiry / 365);
+  const ytMaturityLoss = ytBuyValue;
+  const ytGrossValue = ytAirdropValue + ytBaseYieldValue;
+  const ytNetValue = ytGrossValue - ytMaturityLoss;
+
   const ytRoi = ytBuyValue > 0
-    ? (ytAirdropValue / ytBuyValue) * 100
+    ? (ytNetValue / ytBuyValue) * 100
     : 0;
 
   // Non-YT annualized yield (position-only APY)
@@ -131,7 +154,14 @@ function calculateResults() {
     ytQuantity,
     ytDailyPoints,
     ytTotalPoints,
+    ytPointDays,
+    ytDaysToExpiry,
+    ytBaseApy,
+    ytBaseYieldValue,
     ytAirdropValue,
+    ytMaturityLoss,
+    ytGrossValue,
+    ytNetValue,
     ytRoi,
     nonYtApy,
   };
@@ -152,7 +182,7 @@ function updateResults() {
 
   // YT result cards
   animateValue('result_ytTotalPoints', r.ytTotalPoints, 'number');
-  animateValue('result_ytAirdropValue', r.ytAirdropValue, 'currency');
+  animateValue('result_ytAirdropValue', r.ytNetValue, 'currency');
 
   // Update sub-info
   const investEl = document.getElementById('result_totalInvestment');
@@ -162,12 +192,12 @@ function updateResults() {
 
   const ytContribEl = document.getElementById('result_ytContribution');
   if (ytContribEl) {
-    ytContribEl.textContent = `YT ${t('yt_contribution')}: ${formatNumber(r.ytTotalPoints, 0)}`;
+    ytContribEl.textContent = `YT ${t('yt_contribution')}: ${formatNumber(r.ytTotalPoints, 0)} · ${formatNumber(r.ytPointDays, 0)} ${t('daysUnit')}`;
   }
 
   const ytRoiEl = document.getElementById('result_ytRoi');
   if (ytRoiEl) {
-    ytRoiEl.textContent = `YT ROI: ${formatNumber(r.ytRoi)}%`;
+    ytRoiEl.textContent = `${t('yt_airdrop')}: $${formatNumber(r.ytAirdropValue, 0)} · ${t('yt_baseYield')}: $${formatNumber(r.ytBaseYieldValue, 0)} · ${t('yt_maturityLoss')}: -$${formatNumber(r.ytMaturityLoss, 0)}`;
   }
 
   const ytOnlyRoiEl = document.getElementById('result_ytOnlyRoi');
