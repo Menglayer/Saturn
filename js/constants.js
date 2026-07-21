@@ -8,6 +8,8 @@ const STRATEGIES = [
   { id: 'hold_susdat_eth',            label_zh: '持有 sUSDat (Ethereum)',                    label_en: 'Hold sUSDat (Ethereum)',                    multiplier: 1,   category: 'saturn' },
   { id: 'hold_usdat_bnb',             label_zh: '持有 USDat (BNB Chain)',                    label_en: 'Hold USDat (BNB Chain)',                    multiplier: 9,   category: 'saturn' },
   { id: 'hold_susdat_bnb',            label_zh: '持有 sUSDat (BNB Chain)',                   label_en: 'Hold sUSDat (BNB Chain)',                   multiplier: 1.2, category: 'saturn' },
+  { id: 'hold_usdat_monad',           label_zh: '持有 USDat (Monad)',                        label_en: 'Hold USDat (Monad)',                        multiplier: 9,   category: 'saturn' },
+  { id: 'hold_susdat_monad',          label_zh: '持有 sUSDat (Monad)',                       label_en: 'Hold sUSDat (Monad)',                       multiplier: 1.2, category: 'saturn' },
 
   { id: 'curve_lp_usdc_usdat',        label_zh: 'Curve LP - USDC/USDat',                     label_en: 'Curve LP - USDC/USDat',                     multiplier: 20,  category: 'curve' },
   { id: 'curve_stake_usdat',          label_zh: 'Stake Curve LP - USDC/USDat',               label_en: 'Stake Curve LP - USDC/USDat',               multiplier: 20,  category: 'curve' },
@@ -29,6 +31,8 @@ const STRATEGIES = [
   { id: 'pendle_yt_usdat_bnb',        label_zh: 'Pendle 持有 YT-USDat (BNB Chain)',           label_en: 'Pendle Hold YT-USDat (BNB Chain)',          multiplier: 36,  category: 'pendle' },
   { id: 'pendle_lp_susdat_bnb',       label_zh: 'Pendle LP - sUSDat (BNB Chain)',            label_en: 'Pendle LP - sUSDat (BNB Chain)',            multiplier: 6,   category: 'pendle' },
   { id: 'pendle_yt_susdat_bnb',       label_zh: 'Pendle 持有 YT-sUSDat (BNB Chain)',          label_en: 'Pendle Hold YT-sUSDat (BNB Chain)',         multiplier: 12,  category: 'pendle' },
+  { id: 'pendle_lp_usdat_monad',      label_zh: 'Pendle LP - USDat (Monad)',                 label_en: 'Pendle LP - USDat (Monad)',                 multiplier: 19,  category: 'pendle' },
+  { id: 'pendle_yt_usdat_monad',      label_zh: 'Pendle 持有 YT-USDat (Monad)',               label_en: 'Pendle Hold YT-USDat (Monad)',              multiplier: 38,  category: 'pendle' },
 
   { id: 'morpho_supply',              label_zh: 'Morpho 抵押 sUSDat',                        label_en: 'Morpho Supply sUSDat as Collateral',        multiplier: 2,   category: 'morpho' },
   { id: 'morpho_lend',                label_zh: 'Morpho 出借 AUSD (Flowdesk Vault)',          label_en: 'Morpho Lend AUSD (Flowdesk Vault)',         multiplier: 1,   category: 'morpho' },
@@ -102,6 +106,14 @@ const YT_MARKETS = {
     baseApyFallback: 0.1374,
     expiry: '2026-08-27T00:00:00.000Z',
     market: '0x1017e73ce9c219164ce841a980136eb023c55387',
+  },
+  yt_usdat_monad: {
+    label: 'YT-USDat (Monad)',
+    multiplier: 38,
+    chainId: 143,
+    hasBaseYield: false,
+    expiry: '2026-08-27T00:00:00.000Z',
+    market: '0x1519fb0d8885020387fcd6a67bc888a168a40afa',
   },
 };
 
