@@ -1107,3 +1107,13 @@ body.modal-open {
   background: rgba(255, 81, 0, 0.22);
   color: #1d2630;
 }
+
+/* Focused S1 calculator */
+.app-container { max-width: 1080px; }
+.input-grid, .result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.card-result { grid-column: auto; }
+.result-value { overflow-wrap: anywhere; }
+.calculation-status { grid-column: 1 / -1; color: var(--text-secondary); }
+@media (max-width: 680px) {
+  .input-grid, .result-grid { grid-template-columns: 1fr; }
+}

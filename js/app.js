@@ -1,396 +1,53 @@
-/**
- * Saturn Airdrop Calculator - Main Application
- */
-
-const LIVE = {
-  points: null,
-  ytPriceByType: Object.fromEntries(Object.keys(YT_MARKETS).map(type => [type, null])),
-  ytMetaByType: Object.fromEntries(Object.keys(YT_MARKETS).map(type => [type, null])),
-  aspectaFdv: null,
-  aspectaKeyPrice: null,
-  aspectaStatus: 'syncing',
-};
+/** Saturn S1 points-to-token calculator. */
+let fdvEdited = false;
+let fdvStatus = 'loading';
+let s1TotalPoints = null;
+let pointsStatus = 'pointsLoading';
 
 function renderAll() {
-  renderHeader();
-  renderPromoBanner();
-  renderInputCards();
-  renderPositions();
-  renderResultCards();
-  renderMultiplierTable();
+  document.getElementById('appHeader').innerHTML = `
+    <div class="header-content">
+      <div class="header-left"><div class="logo"><div class="logo-ring"></div><span class="logo-text">S</span></div>
+        <div class="header-titles"><h1>${t('title')}</h1><p class="subtitle">${t('subtitle')}</p></div>
+      </div>
+      <button class="btn-pill" onclick="toggleLang()">${t('langSwitch')}</button>
+    </div>`;
+  document.getElementById('inputCards').innerHTML = `
+    <div class="card card-input">
+      <h2 class="card-title">${t('yourPoints')}</h2>
+      <div class="field"><label for="currentPoints">${t('yourPoints')}</label>
+        <input type="number" id="currentPoints" min="0" step="any" value="0" oninput="updateResults()">
+      </div>
+      <div class="info-box"><p>${t('formula')}</p></div>
+    </div>
+    <div class="card card-input">
+      <h2 class="card-title">${t('parameters')}</h2>
+      <div class="field"><label>${t('s1Total')}</label>
+        <div class="daily-points-display" id="s1TotalPoints">—</div>
+        <div class="field-hint" id="pointsStatus"></div>
+      </div>
+      <div class="field"><label for="fdv">${t('fdv')}</label>
+        <input type="number" id="fdv" min="0" step="1000000" value="${DEFAULTS.fdv}" oninput="fdvEdited = true; updateResults()">
+        <div class="field-hint" id="fdvStatus"></div>
+      </div>
+      <div class="positions-total"><span>${t('supply')}</span><span>1B $STRN</span></div>
+      <div class="positions-total"><span>${t('allocation')}</span><span>${DEFAULTS.airdropPercent}% · 50M $STRN</span></div>
+    </div>`;
+  document.getElementById('resultCards').innerHTML = `
+    <div class="card card-result card-highlight-gold"><div class="result-label">${t('tokens')}</div>
+      <div class="result-value result-big" id="result_tokens">—</div><div class="result-sub">$STRN</div></div>
+    <div class="card card-result card-highlight"><div class="result-label">${t('value')}</div>
+      <div class="result-value result-big" id="result_value">—</div><div class="result-sub" id="result_price"></div></div>
+    <p class="calculation-status" id="calculationStatus" role="status"></p>`;
   renderFooter();
   updateResults();
 }
 
-function renderPromoBanner() {
-  const header = document.getElementById('appHeader');
-  if (!header) return;
-
-  const existing = document.getElementById('promoBanner');
-  if (existing) existing.remove();
-
-  const wrap = document.createElement('div');
-  wrap.id = 'promoBanner';
-  wrap.className = 'promo-banner card';
-  wrap.innerHTML = `
-    <a class="promo-link" href="https://app.saturn.credit/portfolio" target="_blank" rel="noopener">
-    <div class="promo-main">
-      <span class="promo-title">${t('promoBanner')}</span>
-      <div class="promo-invite-wrap">
-        <span class="promo-invite-label">${t('promoInviteLabel')}</span>
-        <button class="invite-code-btn" id="inviteCodeBtn" onclick="copyInviteCode(event)" title="${t('copyInvite')}">
-          SAT-694419FE
-        </button>
-      </div>
-    </div>
-    <div class="promo-sub">${t('promoHint')}</div>
-    <div class="promo-cta">${t('goPortfolio')} -></div>
-    </a>
-    <div class="promo-toast" id="copyToast">${t('copySuccess')}</div>
-  `;
-
-  header.insertAdjacentElement('afterend', wrap);
-}
-
-function copyInviteCode(event) {
-  const code = 'SAT-694419FE';
-  const toast = document.getElementById('copyToast');
-  if (event) {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
-  const showToast = () => {
-    if (!toast) return;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 1400);
-  };
-
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(code).then(showToast).catch(() => {
-      const input = document.createElement('input');
-      input.value = code;
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand('copy');
-      document.body.removeChild(input);
-      showToast();
-    });
-    return;
-  }
-
-  const input = document.createElement('input');
-  input.value = code;
-  document.body.appendChild(input);
-  input.select();
-  document.execCommand('copy');
-  document.body.removeChild(input);
-  showToast();
-}
-
-function renderHeader() {
-  const header = document.getElementById('appHeader');
-  if (!header) return;
-  header.innerHTML = `
-    <div class="header-content">
-      <div class="header-left">
-        <div class="logo">
-          <div class="logo-ring"></div>
-          <span class="logo-text">S</span>
-        </div>
-        <div class="header-titles">
-          <h1>${t('title')}</h1>
-          <p class="subtitle">${t('subtitle')}</p>
-        </div>
-      </div>
-      <div class="header-right">
-        <div class="live-badges">
-          <div class="live-badge">
-            <span class="live-label">${t('livePoints')}</span>
-            <span class="live-value" id="livePointsValue">${t('liveUpdating')}...</span>
-          </div>
-          <div class="live-badge">
-            <span class="live-label">${t('liveFdv')}</span>
-            <span class="live-value" id="liveFdvValue">${t('liveUpdating')}...</span>
-          </div>
-        </div>
-        <button class="btn-pill" onclick="toggleLang()" id="langBtn">${t('langSwitch')}</button>
-        <button class="btn-pill btn-accent" onclick="toggleMultiplierModal()" id="multiplierBtn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="7" height="7"></rect>
-            <rect x="14" y="3" width="7" height="7"></rect>
-            <rect x="3" y="14" width="7" height="7"></rect>
-            <rect x="14" y="14" width="7" height="7"></rect>
-          </svg>
-          ${t('showMultipliers')}
-        </button>
-      </div>
-    </div>
-  `;
-}
-
-function renderInputCards() {
-  const container = document.getElementById('inputCards');
-  if (!container) return;
-
-  container.innerHTML = `
-    <!-- Card A: My Parameters -->
-    <div class="card card-input">
-      <h2 class="card-title">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-        ${t('cardA_title')}
-      </h2>
-      <div class="field">
-        <label for="currentPoints">${t('currentPoints')}</label>
-        <input type="number" id="currentPoints" value="${DEFAULTS.currentPoints}" min="0" oninput="updateResults()">
-      </div>
-      <div class="field">
-        <label for="currentDailyPoints">${t('currentDailyPoints')}</label>
-        <input type="number" id="currentDailyPoints" value="0" min="0" disabled>
-        <div class="field-hint">${t('dailyPointsAuto')}</div>
-      </div>
-      <div class="section-divider">
-        <span>${t('positions_title')}</span>
-      </div>
-      <div id="positionsContainer"></div>
-      <button class="btn-add" onclick="addPosition()">
-        ${t('addPosition')}
-      </button>
-      <div class="positions-total">
-        <span>${t('totalDailyFromPositions')}</span>
-        <span id="positionsDailyTotal" class="total-value">0</span>
-      </div>
-
-      <!-- Pendle YT Section -->
-      <div class="section-divider">
-        <span>${t('yt_title')}</span>
-      </div>
-      <div class="field">
-        <label for="ytType">${t('yt_type')}</label>
-        <select id="ytType" onchange="onYtTypeChange()">
-          ${Object.entries(YT_MARKETS).map(([type, config]) => `
-            <option value="${type}">${config.label} (${config.multiplier}x)</option>
-          `).join('')}
-        </select>
-      </div>
-      <div class="field">
-        <label for="ytPrice">${t('yt_price')}</label>
-        <input type="number" id="ytPrice" value="0" min="0" step="0.0001" oninput="updateResults()">
-        <div class="field-hint" id="ytLivePriceInline">${t('liveYtPrice')}: ${t('liveUpdating')}...</div>
-      </div>
-      <div class="field field-readonly">
-        <label>${t('yt_baseApy')}</label>
-        <div class="daily-points-display">
-          <span class="category-dot" style="background:var(--accent-green)"></span>
-          <span id="ytBaseApy" class="daily-value">0.00%</span>
-        </div>
-      </div>
-      <div class="field field-readonly">
-        <label>${t('yt_expiry')}</label>
-        <div class="daily-points-display">
-          <span class="category-dot" style="background:var(--accent-blue)"></span>
-          <span id="ytExpiry" class="daily-value">--</span>
-        </div>
-      </div>
-      <div class="field">
-        <label for="ytBuyValue">${t('yt_buyValue')}</label>
-        <input type="number" id="ytBuyValue" value="0" min="0" step="100" oninput="updateResults()">
-      </div>
-      <div class="field field-readonly">
-        <label>${t('yt_quantity')}</label>
-        <div class="daily-points-display">
-          <span class="category-dot" style="background:var(--accent-blue)"></span>
-          <span id="ytQuantity" class="daily-value">0</span>
-        </div>
-      </div>
-      <div class="field field-readonly">
-        <label>${t('yt_dailyPoints')}</label>
-        <div class="daily-points-display">
-          <span class="category-dot" style="background:var(--accent-purple)"></span>
-          <span id="ytDailyPoints" class="daily-value">0</span>
-          <span class="daily-unit">pts/day</span>
-        </div>
-      </div>
-      <div class="info-box info-formula">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="4 17 10 11 4 5"></polyline>
-          <line x1="12" y1="19" x2="20" y2="19"></line>
-        </svg>
-        <p>${t('yt_formula')}</p>
-      </div>
-    </div>
-
-    <!-- Card B: Network Assumptions -->
-    <div class="card card-input">
-      <h2 class="card-title">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="2" y1="12" x2="22" y2="12"></line>
-          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-        </svg>
-        ${t('cardB_title')}
-      </h2>
-      <div class="field">
-        <label for="fdv">${t('fdv')}</label>
-        <input type="number" id="fdv" value="${DEFAULTS.fdv}" min="0" step="1000000" oninput="updateResults()">
-        <div class="field-hint" id="fdvLiveInline">${t('fdvAutoHint')}</div>
-      </div>
-      <div class="field">
-        <label for="airdropPercent">${t('airdropPercent')}</label>
-        <input type="number" id="airdropPercent" value="${DEFAULTS.airdropPercent}" min="0" max="100" step="0.5" disabled>
-        <div class="field-hint">${t('fixedProtocolAssumption')}</div>
-      </div>
-      <div class="field">
-        <label for="dailyGrowthRate">${t('dailyGrowthRate')}</label>
-        <input type="number" id="dailyGrowthRate" value="${DEFAULTS.dailyGrowthRate}" min="0" max="100" step="0.1" oninput="updateResults()">
-      </div>
-      <div class="field">
-        <label for="networkCurrentDaily">${t('networkCurrentDaily')}</label>
-        <input type="number" id="networkCurrentDaily" value="${DEFAULTS.networkCurrentDaily}" min="0" oninput="updateResults()"
-          placeholder="${t('networkCurrentDaily_hint')}">
-      </div>
-    </div>
-
-    <!-- Card C: Time & Data -->
-    <div class="card card-input">
-      <h2 class="card-title">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-        ${t('cardC_title')}
-      </h2>
-      <div class="field field-readonly">
-        <label>${t('tokenSupply')}</label>
-        <div class="daily-points-display">$STRN · 1B</div>
-      </div>
-      <div class="field">
-        <label for="projectionDays">${t('projectionDays')}</label>
-        <input type="number" id="projectionDays" value="${DEFAULTS.projectionDays}" min="0" step="1" oninput="updateResults()">
-        <div class="field-hint">${t('projectionHint')}</div>
-      </div>
-      <div class="info-box info-formula">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="4 17 10 11 4 5"></polyline>
-          <line x1="12" y1="19" x2="20" y2="19"></line>
-        </svg>
-        <p>${t('pointsFormula')}</p>
-      </div>
-    </div>
-  `;
-}
-
-function renderResultCards() {
-  const container = document.getElementById('resultCards');
-  if (!container) return;
-
-  container.innerHTML = `
-    <div class="card card-result card-highlight">
-      <div class="result-label">${t('valuePerMillion')}</div>
-      <div class="result-value" id="result_valuePerMillion" data-current-value="0">≈ $0.00</div>
-    </div>
-    <div class="card card-result card-highlight-gold">
-      <div class="result-label">${t('myAirdropValue')}</div>
-      <div class="result-value result-big" id="result_myAirdropValue" data-current-value="0">≈ $0.00</div>
-      <div class="result-sub" id="result_totalInvestment">${t('totalInvestment')}: $0</div>
-    </div>
-    <div class="card card-result card-highlight-gold">
-      <div class="result-label">${t('myTokenQuantity')}</div>
-      <div class="result-value" id="result_myTokenQuantity" data-current-value="0">0 $STRN</div>
-      <div class="result-sub">${t('tokenQuantityNote')}</div>
-    </div>
-    <div class="card card-result">
-      <div class="result-label">${t('tokenPrice')}</div>
-      <div class="result-value" id="result_tokenPrice" data-current-value="0">$0.00</div>
-      <div class="result-sub">FDV / 1,000,000,000</div>
-    </div>
-    <div class="card card-result card-kpi">
-      <div class="result-label">${t('roi')}</div>
-      <div class="result-value" id="result_roi" data-current-value="0">0.00%</div>
-      <div class="result-sub">${t('pointsApyNote')}</div>
-    </div>
-    <div class="card card-result card-ytroi">
-      <div class="result-label">${t('ytRoiCard')}</div>
-      <div class="result-value" id="result_ytOnlyRoi" data-current-value="0">0.00%</div>
-      <div class="result-sub">${t('ytNetRoiNote')}</div>
-    </div>
-    <div class="card card-result">
-      <div class="result-label">${t('myTotalPoints')}</div>
-      <div class="result-value" id="result_myTotalPoints" data-current-value="0">0</div>
-      <div class="result-sub">${t('myTotalPoints_sub')}</div>
-    </div>
-    <div class="card card-result">
-      <div class="result-label">${t('networkTotalPoints')}</div>
-      <div class="result-value" id="result_networkTotalPoints" data-current-value="0">0</div>
-      <div class="result-sub">${t('networkTotalPoints_sub')}</div>
-    </div>
-    <div class="card card-result card-yt">
-      <div class="result-label">${t('yt_totalMiles')}</div>
-      <div class="result-value" id="result_ytTotalPoints" data-current-value="0">0</div>
-      <div class="result-sub" id="result_ytContribution">YT ${t('yt_contribution')}: 0</div>
-    </div>
-    <div class="card card-result card-yt">
-      <div class="result-label">${t('yt_netValue')}</div>
-      <div class="result-value" id="result_ytAirdropValue" data-current-value="0">≈ $0.00</div>
-      <div class="result-sub" id="result_ytRoi">YT APY: 0.00%</div>
-    </div>
-  `;
-}
-
-function renderMultiplierTable() {
-  const modal = document.getElementById('multiplierModal');
-  if (!modal) return;
-
-  const lang = currentLang;
-  const rows = STRATEGIES.map(s => {
-    const color = CATEGORY_COLORS[s.category];
-    return `
-      <tr>
-        <td>
-          <span class="category-dot" style="background:${color}"></span>
-          ${lang === 'zh' ? s.label_zh : s.label_en}
-        </td>
-        <td class="multiplier-value">${s.multiplier}x</td>
-      </tr>
-    `;
-  }).join('');
-
-  modal.innerHTML = `
-    <div class="modal-backdrop" onclick="toggleMultiplierModal()"></div>
-    <div class="modal-content card">
-      <div class="modal-header">
-        <h3>${t('multiplierTable_title')}</h3>
-        <button class="btn-close" onclick="toggleMultiplierModal()">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-      <table class="multiplier-table">
-        <thead>
-          <tr>
-            <th>${t('activity')}</th>
-            <th>${t('pointsPerDay')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-function toggleMultiplierModal() {
-  const modal = document.getElementById('multiplierModal');
-  if (modal) {
-    modal.classList.toggle('active');
-    document.body.classList.toggle('modal-open');
-  }
+async function loadFdv() {
+  const result = await fetchAspectaPremarketFdv().catch(() => null);
+  fdvStatus = result ? 'synced' : 'manual';
+  if (result && !fdvEdited) document.getElementById('fdv').value = Math.round(result.fdvUsd);
+  updateResults();
 }
 
 function renderFooter() {
@@ -405,84 +62,6 @@ function renderFooter() {
       <a href="https://saturncredit.gitbook.io/saturn-docs" target="_blank" rel="noopener">Docs</a>
     </p>
   `;
-}
-
-function parseJsonSafe(text) {
-  try {
-    return JSON.parse(text);
-  } catch (_) {
-    return null;
-  }
-}
-
-function extractYtPriceFromMarket(payload) {
-  const data = typeof payload === 'string' ? parseJsonSafe(payload) : payload;
-  return data?.yt?.price?.usd ?? null;
-}
-
-function firstPositiveNumber(values) {
-  for (const value of values) {
-    const num = Number(value);
-    if (Number.isFinite(num) && num > 0) return num;
-  }
-  return 0;
-}
-
-function extractYtMarketLiveData(payload, config = {}) {
-  const data = typeof payload === 'string' ? parseJsonSafe(payload) : payload;
-  const price = Number(data?.yt?.price?.usd);
-  const underlyingPrice = Number(
-    data?.underlyingAsset?.price?.usd
-      ?? data?.sy?.price?.usd
-      ?? data?.basePricingAsset?.price?.usd
-      ?? 1
-  );
-
-  let baseApy = 0;
-  let baseApySource = 'none';
-  if (config.hasBaseYield !== false) {
-    const liveApy = firstPositiveNumber([data?.underlyingInterestApy, data?.underlyingApy]);
-    const uyFloorApy = Number(data?.extendedInfo?.yieldRange?.min);
-    const fallbackApy = Number(config.baseApyFallback);
-
-    if (liveApy > 0) {
-      baseApy = liveApy;
-      baseApySource = 'live';
-    } else if (Number.isFinite(fallbackApy) && fallbackApy > 0) {
-      baseApy = fallbackApy;
-      baseApySource = 'fallback';
-    } else if (Number.isFinite(uyFloorApy) && uyFloorApy > 0) {
-      baseApy = uyFloorApy;
-      baseApySource = 'uyFloor';
-    }
-  }
-
-  return {
-    price: Number.isFinite(price) ? price : null,
-    baseApy,
-    baseApySource,
-    underlyingPrice: Number.isFinite(underlyingPrice) && underlyingPrice > 0 ? underlyingPrice : 1,
-    expiry: data?.yt?.expiry || null,
-  };
-}
-
-function parseMerklAmountToNumber(amountStr, decimals = 18) {
-  if (!amountStr || !/^\d+$/.test(amountStr)) return null;
-  const normalized = amountStr.replace(/^0+/, '') || '0';
-  if (normalized === '0') return 0;
-
-  let valueText;
-  if (normalized.length <= decimals) {
-    const padded = normalized.padStart(decimals, '0');
-    valueText = `0.${padded.slice(0, 6)}`;
-  } else {
-    const intPart = normalized.slice(0, normalized.length - decimals);
-    const fracPart = normalized.slice(normalized.length - decimals, normalized.length - decimals + 6);
-    valueText = fracPart ? `${intPart}.${fracPart}` : intPart;
-  }
-
-  const num = Number(valueText);
-  return Number.isFinite(num) ? num : null;
 }
 
 function formatUnits(value, decimals = 18) {
@@ -611,178 +190,6 @@ async function fetchAspectaPremarketFdv() {
     : null;
 }
 
-function getSelectedYtType() {
-  return document.getElementById('ytType')?.value || 'yt_usdat';
-}
-
-function getYtMeta(type = getSelectedYtType()) {
-  const config = YT_MARKETS[type] || {};
-  const liveMeta = LIVE.ytMetaByType[type] || {};
-  const fallbackBaseApy = config.hasBaseYield === false ? 0 : Number(config.baseApyFallback) || 0;
-  return {
-    baseApy: Number.isFinite(liveMeta.baseApy) ? liveMeta.baseApy : fallbackBaseApy,
-    baseApySource: liveMeta.baseApySource || (fallbackBaseApy > 0 ? 'fallback' : 'none'),
-    underlyingPrice: Number.isFinite(liveMeta.underlyingPrice) ? liveMeta.underlyingPrice : 1,
-    expiry: liveMeta.expiry || config.expiry || null,
-  };
-}
-
-function formatDateLabel(value) {
-  if (!value) return '--';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '--';
-  return date.toISOString().slice(0, 10);
-}
-
-function syncYtPriceInputByType() {
-  const ytPriceInput = document.getElementById('ytPrice');
-  if (!ytPriceInput) return;
-  const selectedType = getSelectedYtType();
-  const selectedPrice = LIVE.ytPriceByType[selectedType];
-  if (selectedPrice !== null) {
-    ytPriceInput.value = selectedPrice.toFixed(4);
-  }
-}
-
-function syncFdvInputFromAspecta() {
-  const fdvInput = document.getElementById('fdv');
-  if (fdvInput && LIVE.aspectaFdv !== null) {
-    fdvInput.value = Math.round(LIVE.aspectaFdv);
-  }
-}
-
-function onYtTypeChange() {
-  syncYtPriceInputByType();
-  renderLiveMetrics();
-  updateResults();
-}
-
-function renderLiveMetrics() {
-  const pointsEl = document.getElementById('livePointsValue');
-  const fdvEl = document.getElementById('liveFdvValue');
-  const fdvInlineEl = document.getElementById('fdvLiveInline');
-  const ytInlineEl = document.getElementById('ytLivePriceInline');
-  const ytBaseApyEl = document.getElementById('ytBaseApy');
-  const ytExpiryEl = document.getElementById('ytExpiry');
-
-  if (pointsEl && LIVE.points === null) {
-    pointsEl.textContent = `${t('liveUnavailable')}`;
-  } else if (pointsEl) {
-    pointsEl.textContent = formatNumber(LIVE.points, 1);
-  }
-
-  const fdvText = LIVE.aspectaStatus === 'syncing'
-    ? `${t('liveUpdating')}...`
-    : LIVE.aspectaFdv === null
-      ? t('liveUnavailable')
-      : `$${formatNumber(LIVE.aspectaFdv, 0)}`;
-
-  if (fdvEl) {
-    fdvEl.textContent = fdvText;
-  }
-
-  if (fdvInlineEl) {
-    if (LIVE.aspectaStatus === 'syncing') {
-      fdvInlineEl.textContent = `${t('liveFdv')}: ${t('liveUpdating')}...`;
-    } else if (LIVE.aspectaFdv === null) {
-      fdvInlineEl.textContent = `${t('liveFdv')}: ${t('liveUnavailable')} · ${t('fdvAutoHint')}`;
-    } else {
-      fdvInlineEl.textContent = `${t('liveFdv')}: $${formatNumber(LIVE.aspectaFdv, 0)} · ${t('liveAspectaKeyPrice')}: $${formatNumber(LIVE.aspectaKeyPrice, 4)}`;
-    }
-  }
-
-  const selectedType = getSelectedYtType();
-  const ytPrice = LIVE.ytPriceByType[selectedType];
-  const ytMeta = getYtMeta(selectedType);
-  const baseApyLabel = ytMeta.baseApy > 0
-    ? `${formatNumber(ytMeta.baseApy * 100, 2)}%`
-    : t('yt_noBaseYield');
-  const expiryLabel = formatDateLabel(ytMeta.expiry);
-
-  if (ytInlineEl) {
-    ytInlineEl.textContent = ytPrice === null
-      ? `${t('liveYtPrice')}: ${t('liveUnavailable')} · ${t('yt_baseApy')}: ${baseApyLabel}`
-      : `${t('liveYtPrice')}: $${formatNumber(ytPrice, 4)} · ${t('yt_baseApy')}: ${baseApyLabel}`;
-  }
-
-  if (ytBaseApyEl) {
-    ytBaseApyEl.textContent = baseApyLabel;
-  }
-
-  if (ytExpiryEl) {
-    ytExpiryEl.textContent = expiryLabel;
-  }
-}
-
-async function fetchLiveMetrics() {
-  const merklRecipientDirect = 'https://api.merkl.xyz/v4/rewards/token/?chainId=1&address=0xD223bbdd0421E394C0df9dFfe568f1dADfFd6f85&recipient=0x80c6a512b548229226c0676d6fdbaff81d325990';
-  const merklRecipientProxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(merklRecipientDirect)}`;
-  const merklDirect = 'https://api.merkl.xyz/v4/rewards/token/total?chainId=1&address=0xD223bbdd0421E394C0df9dFfe568f1dADfFd6f85';
-  const merklProxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(merklDirect)}`;
-
-  async function fetchTextWithFallback(urls) {
-    for (const url of urls) {
-      try {
-        const resp = await fetchWithTimeout(url, { cache: 'no-store' }, 8000);
-        if (resp.ok) {
-          const text = await resp.text();
-          if (text) return text;
-        }
-      } catch (_) {
-      }
-    }
-    return '';
-  }
-
-  async function fetchPendleMarketYtPrice(config) {
-    const direct = `https://api-v2.pendle.finance/core/v1/${config.chainId || 1}/markets/${config.market}`;
-    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(direct)}`;
-    const raw = await fetchTextWithFallback([direct, proxy]);
-    if (!raw) return null;
-    return extractYtMarketLiveData(raw, config);
-  }
-
-  const marketConfigs = Object.values(YT_MARKETS);
-  const [merklRecipientRaw, merklRaw, aspectaResult, ...ytMarketData] = await Promise.all([
-    fetchTextWithFallback([merklRecipientDirect, merklRecipientProxy]),
-    fetchTextWithFallback([merklDirect, merklProxy]),
-    fetchAspectaPremarketFdv().catch(() => null),
-    ...marketConfigs.map(config => fetchPendleMarketYtPrice(config)),
-  ]);
-
-  const merklRecipientData = parseJsonSafe(merklRecipientRaw);
-  const merklRecipientAmount = Array.isArray(merklRecipientData)
-    ? merklRecipientData[0]?.amount
-    : merklRecipientData?.amount;
-  const merklRecipientPoints = parseMerklAmountToNumber(merklRecipientAmount, 18);
-  const merklData = parseJsonSafe(merklRaw);
-  const merklPoints = parseMerklAmountToNumber(merklData?.amount, 18);
-  LIVE.points = (merklRecipientPoints === null && merklPoints === null)
-    ? null
-    : Math.max(0, (merklPoints || 0) - (merklRecipientPoints || 0));
-
-  Object.keys(YT_MARKETS).forEach((type, index) => {
-    const data = ytMarketData[index];
-    LIVE.ytPriceByType[type] = data?.price ?? null;
-    LIVE.ytMetaByType[type] = data || null;
-  });
-
-  if (aspectaResult) {
-    LIVE.aspectaFdv = aspectaResult.fdvUsd;
-    LIVE.aspectaKeyPrice = aspectaResult.keyPriceUsd;
-    LIVE.aspectaStatus = 'ready';
-    syncFdvInputFromAspecta();
-  } else if (LIVE.aspectaFdv === null) {
-    LIVE.aspectaStatus = 'unavailable';
-  }
-
-  syncYtPriceInputByType();
-
-  renderLiveMetrics();
-  updateResults();
-}
-
-// Particle background
 function initParticles() {
   const canvas = document.getElementById('particleCanvas');
   if (!canvas) return;
@@ -850,12 +257,53 @@ function initParticles() {
   animate();
 }
 
-// Initialize
 document.addEventListener('DOMContentLoaded', () => {
   initParticles();
   renderAll();
-  // Add a default position
-  addPosition('hold_usdat_eth', 1000);
-  fetchLiveMetrics();
-  setInterval(fetchLiveMetrics, 60 * 1000);
+  loadFdv();
+  loadS1Points();
 });
+
+function parseMerklAmountToNumber(amountStr, decimals = 18) {
+  if (!amountStr || !/^\d+$/.test(amountStr)) return null;
+  const normalized = amountStr.replace(/^0+/, '') || '0';
+  if (normalized === '0') return 0;
+
+  let valueText;
+  if (normalized.length <= decimals) {
+    const padded = normalized.padStart(decimals, '0');
+    valueText = `0.${padded.slice(0, 6)}`;
+  } else {
+    const intPart = normalized.slice(0, normalized.length - decimals);
+    const fracPart = normalized.slice(normalized.length - decimals, normalized.length - decimals + 6);
+    valueText = fracPart ? `${intPart}.${fracPart}` : intPart;
+  }
+
+  const num = Number(valueText);
+  return Number.isFinite(num) ? num : null;
+}
+
+
+async function loadS1Points() {
+  const base = 'https://api.merkl.xyz/v4/rewards/token/';
+  const query = '?chainId=1&address=0xD223bbdd0421E394C0df9dFfe568f1dADfFd6f85';
+  async function getAmount(url) {
+    for (const source of [url, `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`]) {
+      try {
+        const response = await fetchWithTimeout(source, { cache: 'no-store' });
+        if (!response.ok) continue;
+        const data = await response.json();
+        const amount = parseMerklAmountToNumber(Array.isArray(data) ? data[0]?.amount : data?.amount);
+        if (amount !== null) return amount;
+      } catch (_) {}
+    }
+    return null;
+  }
+  const [total, excluded] = await Promise.all([
+    getAmount(`${base}total${query}`),
+    getAmount(`${base}${query}&recipient=0x80c6a512b548229226c0676d6fdbaff81d325990`),
+  ]);
+  s1TotalPoints = total !== null && excluded !== null && total > excluded ? total - excluded : null;
+  pointsStatus = s1TotalPoints === null ? 'pointsUnavailable' : 'totalHint';
+  updateResults();
+}
