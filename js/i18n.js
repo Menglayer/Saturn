@@ -4,7 +4,7 @@
 
 const I18N = {
   zh: {
-    title: '预估你的 $STRC 空投价值',
+    title: '预估你的 $STRN 空投价值',
     subtitle: 'Saturn Gravity Points 空投计算器',
     
     // Card A
@@ -28,8 +28,8 @@ const I18N = {
     yt_expiry: 'YT 到期日',
     yt_quantity: 'YT 数量',
     yt_dailyPoints: 'YT 每日积分',
-    yt_formula: '说明：YT 净收益 = 空投价值 + UY 底息 + S1 结束残值 - 买入成本；积分和底息按 Season/到期较早日期估算，残值按当前 YT 价格与剩余期限线性估算。',
-    yt_totalMiles: 'YT 至结束可获 Points',
+    yt_formula: '说明：YT 净收益 = 空投价值 + UY 底息 + 测算期末残值 - 买入成本；积分和底息按测算周期与 YT 剩余期限的较短者估算，残值按当前 YT 价格与剩余期限线性估算。',
+    yt_totalMiles: 'YT 测算期内可获 Points',
     yt_airdropValue: 'YT 预估空投价值 & ROI',
     yt_airdrop: '空投',
     yt_netValue: 'YT 预估净收益',
@@ -37,7 +37,7 @@ const I18N = {
     yt_residualValue: '残值',
     yt_purchaseCost: '成本',
     yt_noBaseYield: '无底息',
-    ytNetRoiNote: '含底息与 S1 结束残值',
+    ytNetRoiNote: '含底息与测算期末残值',
     yt_contribution: '贡献',
     
     // Card B
@@ -49,18 +49,21 @@ const I18N = {
     networkCurrentDaily_hint: '仅实时总量不可用时使用',
     
     // Card C
-    cardC_title: '时间与数据',
-    seasonEndDate: 'Season 结束日期',
-    daysRemaining: '距离今天',
+    cardC_title: '代币与测算',
+    tokenSupply: '代币总量',
+    projectionDays: '测算天数',
+    projectionHint: '自定义测算周期，非项目截止时间；填 0 按当前积分估算。',
+    myTokenQuantity: '预估获得 $STRN 数量',
+    tokenQuantityNote: '个人积分占比 × 空投比例 × 1B',
+    tokenPrice: '$STRN 估算单价',
     daysUnit: '天',
-    seasonInfo: 'Season 1 于 2026/4/8 开始，结束于 8/8 或 TVL 达 $500M。',
     pointsFormula: '说明：每日积分 = 持仓金额 × 策略倍率。Pendle YT 需按实际 YT 数量计算。',
     
     // Results
     valuePerMillion: '1M Points 的预测价值',
-    myTotalPoints: 'Season 结束时我的累计 Points',
+    myTotalPoints: '测算期末我的累计 Points',
     myTotalPoints_sub: '含当前积分 + 持仓累积',
-    networkTotalPoints: '预测全网累计 (Season End)',
+    networkTotalPoints: '测算期末全网累计 Points',
     networkTotalPoints_sub: '基于每日增速推算',
     myAirdropValue: '预估空投价值',
     roi: '积分 APY',
@@ -95,11 +98,10 @@ const I18N = {
     liveUnavailable: '暂不可用',
     fdvAutoHint: '自动按 Aspecta Saturn 盘前价格计算，可手动覆盖。',
     fixedProtocolAssumption: '由协议假设固定',
-    fixedSeasonBoundary: 'Season 结束边界固定',
   },
   
   en: {
-    title: 'Estimate Your $STRC Airdrop Value',
+    title: 'Estimate Your $STRN Airdrop Value',
     subtitle: 'Saturn Gravity Points Airdrop Calculator',
     
     // Card A
@@ -123,8 +125,8 @@ const I18N = {
     yt_expiry: 'YT Expiry',
     yt_quantity: 'YT Quantity',
     yt_dailyPoints: 'YT Daily Points',
-    yt_formula: 'Note: YT net return = airdrop value + UY base yield + residual value at S1 end - purchase cost. Points and base yield use the earlier of season end or YT expiry; residual value is linearly estimated from current YT price and remaining term.',
-    yt_totalMiles: 'YT Points Until Season End',
+    yt_formula: 'Note: YT net return = airdrop value + UY base yield + residual value at projection end - purchase cost. Points and base yield use the earlier of projection end or YT expiry; residual value is linearly estimated from current YT price and remaining term.',
+    yt_totalMiles: 'YT Points During Projection',
     yt_airdropValue: 'YT Est. Airdrop Value & ROI',
     yt_airdrop: 'Airdrop',
     yt_netValue: 'YT Est. Net Return',
@@ -132,7 +134,7 @@ const I18N = {
     yt_residualValue: 'Residual',
     yt_purchaseCost: 'Cost',
     yt_noBaseYield: 'No base yield',
-    ytNetRoiNote: 'Includes base yield and S1 residual value',
+    ytNetRoiNote: 'Includes base yield and residual value at projection end',
     yt_contribution: 'Contribution',
     
     // Card B
@@ -144,18 +146,21 @@ const I18N = {
     networkCurrentDaily_hint: 'Used only if live total is unavailable',
     
     // Card C
-    cardC_title: 'Time & Data',
-    seasonEndDate: 'Season End Date',
-    daysRemaining: 'Days Remaining',
+    cardC_title: 'Token & Projection',
+    tokenSupply: 'Total Token Supply',
+    projectionDays: 'Projection Days',
+    projectionHint: 'Custom period, not a project deadline. Use 0 for current points.',
+    myTokenQuantity: 'Estimated $STRN Allocation',
+    tokenQuantityNote: 'Your points share × airdrop allocation × 1B',
+    tokenPrice: 'Estimated $STRN Price',
     daysUnit: 'days',
-    seasonInfo: 'Season 1 started Apr 8, 2026. Ends Aug 8 or when TVL hits $500M.',
     pointsFormula: 'Note: Daily Points = Position Amount × Strategy Multiplier. Pendle YT requires actual YT quantity.',
     
     // Results
     valuePerMillion: 'Estimated Value of 1M Points',
-    myTotalPoints: 'My Total Points at Season End',
+    myTotalPoints: 'My Total Points at Projection End',
     myTotalPoints_sub: 'Including current + position accumulation',
-    networkTotalPoints: 'Predicted Network Total (Season End)',
+    networkTotalPoints: 'Predicted Network Total (Projection End)',
     networkTotalPoints_sub: 'Based on daily growth rate',
     myAirdropValue: 'Est. Airdrop Value',
     roi: 'Points APY',
@@ -190,7 +195,6 @@ const I18N = {
     liveUnavailable: 'Unavailable',
     fdvAutoHint: 'Auto-filled from Aspecta Saturn pre-market price; editable if needed.',
     fixedProtocolAssumption: 'Fixed by protocol assumptions',
-    fixedSeasonBoundary: 'Fixed season boundary',
   }
 };
 
@@ -203,7 +207,7 @@ function t(key) {
 function toggleLang() {
   // Save current form values before re-rendering
   const savedValues = {};
-  const fieldIds = ['currentPoints', 'currentDailyPoints', 'fdv', 'airdropPercent', 'dailyGrowthRate', 'networkCurrentDaily', 'seasonEndDate', 'ytType', 'ytPrice', 'ytBuyValue'];
+  const fieldIds = ['currentPoints', 'currentDailyPoints', 'fdv', 'airdropPercent', 'dailyGrowthRate', 'networkCurrentDaily', 'projectionDays', 'ytType', 'ytPrice', 'ytBuyValue'];
   fieldIds.forEach(id => {
     const el = document.getElementById(id);
     if (el) savedValues[id] = el.value;

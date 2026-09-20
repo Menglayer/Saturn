@@ -263,22 +263,14 @@ function renderInputCards() {
         </svg>
         ${t('cardC_title')}
       </h2>
+      <div class="field field-readonly">
+        <label>${t('tokenSupply')}</label>
+        <div class="daily-points-display">$STRN · 1B</div>
+      </div>
       <div class="field">
-        <label for="seasonEndDate">${t('seasonEndDate')}</label>
-        <input type="date" id="seasonEndDate" value="${DEFAULTS.seasonEndDate}" disabled>
-        <div class="field-hint">${t('fixedSeasonBoundary')}</div>
-      </div>
-      <div class="days-remaining-display">
-        <span class="days-label">${t('daysRemaining')}</span>
-        <span id="daysRemaining" class="days-value">--</span>
-      </div>
-      <div class="info-box">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="16" x2="12" y2="12"></line>
-          <line x1="12" y1="8" x2="12.01" y2="8"></line>
-        </svg>
-        <p>${t('seasonInfo')}</p>
+        <label for="projectionDays">${t('projectionDays')}</label>
+        <input type="number" id="projectionDays" value="${DEFAULTS.projectionDays}" min="0" step="1" oninput="updateResults()">
+        <div class="field-hint">${t('projectionHint')}</div>
       </div>
       <div class="info-box info-formula">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -304,6 +296,16 @@ function renderResultCards() {
       <div class="result-label">${t('myAirdropValue')}</div>
       <div class="result-value result-big" id="result_myAirdropValue" data-current-value="0">≈ $0.00</div>
       <div class="result-sub" id="result_totalInvestment">${t('totalInvestment')}: $0</div>
+    </div>
+    <div class="card card-result card-highlight-gold">
+      <div class="result-label">${t('myTokenQuantity')}</div>
+      <div class="result-value" id="result_myTokenQuantity" data-current-value="0">0 $STRN</div>
+      <div class="result-sub">${t('tokenQuantityNote')}</div>
+    </div>
+    <div class="card card-result">
+      <div class="result-label">${t('tokenPrice')}</div>
+      <div class="result-value" id="result_tokenPrice" data-current-value="0">$0.00</div>
+      <div class="result-sub">FDV / 1,000,000,000</div>
     </div>
     <div class="card card-result card-kpi">
       <div class="result-label">${t('roi')}</div>

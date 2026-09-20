@@ -8,7 +8,7 @@ function calculateResults() {
   const airdropPercent = parseFloat(document.getElementById('airdropPercent')?.value) || 0;
   const dailyGrowthRate = parseFloat(document.getElementById('dailyGrowthRate')?.value) || 0;
   const networkCurrentDaily = parseFloat(document.getElementById('networkCurrentDaily')?.value) || 0;
-  const seasonEndDate = document.getElementById('seasonEndDate')?.value || DEFAULTS.seasonEndDate;
+  const remainingDays = Math.max(0, Math.floor(Number(document.getElementById('projectionDays')?.value ?? DEFAULTS.projectionDays) || 0));
 
   // Pendle YT parameters
   const ytType = document.getElementById('ytType')?.value || 'yt_usdat';
@@ -28,9 +28,6 @@ function calculateResults() {
   // Calculate remaining days
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const endDate = new Date(seasonEndDate);
-  endDate.setHours(0, 0, 0, 0);
-  const remainingDays = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)));
   const ytExpiryDate = ytMeta.expiry ? new Date(ytMeta.expiry) : null;
   if (ytExpiryDate && !Number.isNaN(ytExpiryDate.getTime())) {
     ytExpiryDate.setHours(0, 0, 0, 0);
@@ -41,12 +38,6 @@ function calculateResults() {
   const ytPointDays = Math.min(remainingDays, ytDaysToExpiry);
   const ytResidualDays = Math.max(0, ytDaysToExpiry - ytPointDays);
 
-  // Update days remaining display
-  const daysEl = document.getElementById('daysRemaining');
-  if (daysEl) {
-    daysEl.textContent = `${remainingDays} ${t('daysUnit')}`;
-  }
-
   // YT calculations
   // YT quantity = buy value / YT price
   const ytQuantity = ytPrice > 0 ? ytBuyValue / ytPrice : 0;
@@ -55,7 +46,7 @@ function calculateResults() {
   // Simplified for full-day holding: YT daily points = YT quantity × multiplier
   const ytDailyPointsRaw = ytQuantity * ytMultiplier;
   const ytDailyPoints = ytDailyPointsRaw * 0.95;
-  // Total YT points until season end or YT expiry, whichever comes first.
+  // Total YT points until projection end or YT expiry, whichever comes first.
   const ytTotalPoints = ytDailyPoints * ytPointDays;
 
   // Calculate total daily points from positions + YT only
@@ -70,11 +61,11 @@ function calculateResults() {
   // Calculate total investment (positions + YT buy value)
   const totalInvestment = getPositionsTotalInvestment() + ytBuyValue;
 
-  // My total points at season end
-  const myTotalPoints = currentPoints + totalDailyPoints * remainingDays;
+  // My total points at projection end
+  const myTotalPoints = currentPoints + positionDailyTotal * remainingDays + ytTotalPoints;
 
-  // Network total points at season end:
-  // when live total exists, compound it by daily growth until season end
+  // Network total points at projection end:
+  // when live total exists, compound it by daily growth until projection end
   const liveNetworkPoints = (typeof LIVE !== 'undefined' && typeof LIVE.points === 'number') ? LIVE.points : null;
   const growthRate = Math.max(0, dailyGrowthRate) / 100;
 
@@ -108,15 +99,17 @@ function calculateResults() {
     ? airdropPool * (myTotalPoints / networkTotalPoints)
     : 0;
 
-  // APY factor by season remaining days
-  const annualFactor = remainingDays > 0 ? (365 / remainingDays) : 0;
+  const tokenPrice = fdv / DEFAULTS.tokenSupply;
+  const myTokenQuantity = networkTotalPoints > 0
+    ? DEFAULTS.tokenSupply * (airdropPercent / 100) * (myTotalPoints / networkTotalPoints)
+    : 0;
 
   // YT-specific airdrop value
   const ytAirdropValue = networkTotalPoints > 0
     ? airdropPool * (ytTotalPoints / networkTotalPoints)
     : 0;
 
-  // Season 1 ends before YT expiry, so value YT at season end instead of forcing it to zero.
+  // Value remaining YT term at the end of the projection.
   const ytBaseApy = Math.max(0, Number(ytMeta.baseApy) || 0);
   const ytUnderlyingPrice = Math.max(0, Number(ytMeta.underlyingPrice) || 1);
   const ytCurrentMarketValue = ytQuantity * ytPrice;
@@ -145,6 +138,8 @@ function calculateResults() {
   const roi = nonYtApy;
 
   return {
+    tokenPrice,
+    myTokenQuantity,
     remainingDays,
     positionDailyTotal,
     totalDailyPoints,
@@ -185,6 +180,8 @@ function updateResults() {
   animateValue('result_myTotalPoints', r.myTotalPoints, 'number');
   animateValue('result_networkTotalPoints', r.networkTotalPoints, 'number');
   animateValue('result_myAirdropValue', r.myAirdropValue, 'currency');
+  animateValue('result_myTokenQuantity', r.myTokenQuantity, 'token');
+  animateValue('result_tokenPrice', r.tokenPrice, 'price');
   animateValue('result_roi', r.roi, 'percent');
 
   // YT result cards
@@ -243,6 +240,10 @@ function formatNumber(num, decimals = 2) {
 
 function formatDisplay(value, type) {
   switch (type) {
+    case 'token':
+      return `${formatNumber(value, 2)} $STRN`;
+    case 'price':
+      return `$${formatNumber(value, 6)}`;
     case 'currency':
       return `≈ $${formatNumber(value)}`;
     case 'number':

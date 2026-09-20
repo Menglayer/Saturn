@@ -50,8 +50,8 @@ const DEFAULTS = {
   airdropPercent: 5,
   dailyGrowthRate: 3,
   networkCurrentDaily: 0,
-  seasonEndDate: '2026-08-08',
-  seasonStartDate: '2026-04-08',
+  projectionDays: 30,
+  tokenSupply: 1_000_000_000,
 };
 
 const YT_MARKETS = {
